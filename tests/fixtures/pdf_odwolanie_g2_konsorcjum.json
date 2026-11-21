@@ -1,0 +1,45 @@
+{
+  "OdwolanieKIO": {
+    "data": "2026-09-21",
+    "czynnosc_dzien": "2026-09-11",
+    "czynnosc_powod_id": 8,
+    "czynnosc_opis": "Zaniechanie wykluczenia wykonawcy",
+    "miejscowosc": "Gdynia"
+  },
+  "Odwolujacy": [
+    {
+      "krs": "0000312987",
+      "nazwa": "Nordhaven Marine sp. z o.o.",
+      "nip": "5862231478",
+      "regon": "220587412",
+      "przez-pelnomocnika": 1,
+      "pelnomocnik": {
+        "imie_nazwisko": "Krzysztof Baran",
+        "nazwa": "Kancelaria Adwokacka Baran i Wspólnicy sp.p.",
+        "mail": "k.baran@baran-adwokaci.example"
+      }
+    }
+  ],
+  "Zamawiajacy": [
+    {
+      "krs": "0000082699",
+      "nazwa": "Zarząd Morskiego Portu Gdynia S.A.",
+      "nip": "5860101100",
+      "regon": "190144530",
+      "prowadzacy_postepowanie": 1
+    },
+    {
+      "krs": null,
+      "nazwa": "Gmina Miasta Gdyni",
+      "nip": "5862310080",
+      "regon": "191675557",
+      "prowadzacy_postepowanie": 0
+    }
+  ],
+  "ZamowieniePubliczne": {
+    "numer_bzp": null,
+    "numer_postepowania": "ZP/PN/44/2026",
+    "numer_ted": "498812-2026",
+    "tytul": "Przebudowa nabrzeża Holenderskiego wraz z infrastrukturą towarzyszącą"
+  }
+}

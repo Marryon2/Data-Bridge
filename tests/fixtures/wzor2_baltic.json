@@ -1,0 +1,38 @@
+{
+  "OdwolanieKIO": {
+    "data": "2026-02-16",
+    "czynnosc_dzien": "2026-02-06",
+    "czynnosc_powod_id": 2,
+    "czynnosc_opis": "Ogłoszenie wyboru oferty",
+    "miejscowosc": "Gdańsk"
+  },
+  "Odwolujacy": [
+    {
+      "krs": "9994102837",
+      "nazwa": "Baltic Energy Grid sp. z o.o.",
+      "nip": "9995192837",
+      "regon": "999301928",
+      "przez-pelnomocnika": 1,
+      "pelnomocnik": {
+        "imie_nazwisko": "Piotr Wójcik",
+        "nazwa": "Kancelaria Prawna BalticaLex",
+        "mail": "p.wojcik@balticalex.example"
+      }
+    }
+  ],
+  "Zamawiajacy": [
+    {
+      "krs": "9992039485",
+      "nazwa": "Miejskie Przedsiębiorstwo Energetyki Cieplnej S.A.",
+      "nip": "9996172839",
+      "regon": "999817263",
+      "prowadzacy_postepowanie": null
+    }
+  ],
+  "ZamowieniePubliczne": {
+    "numer_bzp": null,
+    "numer_postepowania": "ZP/EE/14/2026",
+    "numer_ted": "999310-2026",
+    "tytul": "Modernizacja stacji wymienników ciepła wraz z dostawą układów automatyki przemysłowej"
+  }
+}

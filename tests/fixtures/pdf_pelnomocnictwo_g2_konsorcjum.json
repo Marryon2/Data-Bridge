@@ -1,0 +1,45 @@
+{
+  "mocodawca": [
+    {
+      "data": {
+        "imie_nazwisko": null,
+        "krs": "0000612455",
+        "nazwa": "Ardento Instalacje sp. z o.o.",
+        "nip": "5213712290",
+        "typ": "osoba_prawna"
+      },
+      "podpisujacy": [
+        {
+          "imie_nazwisko": "Paweł Jankowski"
+        }
+      ]
+    },
+    {
+      "data": {
+        "imie_nazwisko": null,
+        "krs": "0000233416",
+        "nazwa": "Tecmar Serwis sp. j.",
+        "nip": "7962998811",
+        "typ": "osoba_prawna"
+      },
+      "podpisujacy": [
+        {
+          "imie_nazwisko": "Ryszard Tomczak"
+        },
+        {
+          "imie_nazwisko": "Elżbieta Tomczak"
+        }
+      ]
+    }
+  ],
+  "pelnomocnicy": [
+    {
+      "imie_nazwisko": "Katarzyna Lewandowska",
+      "pesel": null
+    },
+    {
+      "imie_nazwisko": "Michał Dąbrowski",
+      "pesel": null
+    }
+  ]
+}

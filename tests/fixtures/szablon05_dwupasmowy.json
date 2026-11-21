@@ -1,0 +1,38 @@
+{
+  "OdwolanieKIO": {
+    "data": "2026-08-18",
+    "czynnosc_dzien": "2026-08-13",
+    "czynnosc_powod_id": 1,
+    "czynnosc_opis": "Decyzja o odrzuceniu oferty",
+    "miejscowosc": "Zielona Góra"
+  },
+  "Odwolujacy": [
+    {
+      "krs": "9994411882",
+      "nazwa": "Lubuska Energia Odnawialna sp. z o.o.",
+      "nip": "9992200441",
+      "regon": "999663311",
+      "przez-pelnomocnika": 1,
+      "pelnomocnik": {
+        "imie_nazwisko": "Zofia Malinowska",
+        "nazwa": "Kancelaria Prawna Lubusz-Lex",
+        "mail": "z.malinowska@lubuszlex.example"
+      }
+    }
+  ],
+  "Zamawiajacy": [
+    {
+      "krs": null,
+      "nazwa": "Gmina Sulechów",
+      "nip": "9998833445",
+      "regon": "999117722",
+      "prowadzacy_postepowanie": null
+    }
+  ],
+  "ZamowieniePubliczne": {
+    "numer_bzp": "2026/BZP00999388",
+    "numer_postepowania": "ZP.271.22.2026",
+    "numer_ted": null,
+    "tytul": "Budowa instalacji fotowoltaicznych oraz magazynów energii na budynkach użyteczności publicznej Gminy Sulechów"
+  }
+}

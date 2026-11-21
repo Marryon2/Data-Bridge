@@ -1,0 +1,107 @@
+name: przelew
+description: Potwierdzenie polecenia przelewu
+threshold: 4
+grey: 1
+positive:
+  - pattern: 'przelew'
+    weight: 5
+  # Potwierdzenie bez słowa „przelew” (np. „Potwierdzenie transakcji”). Para rachunków wygrywa z „pełnomocnictwem” w tytule.
+  - pattern: 'potwierdzenie\s+(?:transakcji|operacji|wykonania|realizacji)'
+    weight: 3
+  - pattern: 'rachun\w*\s+(?:nadawcy|zleceniodawcy|obciążan\w*)|z\s+rachunku'
+    weight: 2
+  - pattern: 'rachun\w*\s+(?:odbiorcy|beneficjenta|uznawan\w*)|na\s+rachunek'
+    weight: 2
+  # Bloki „Nadawca” / „Odbiorca” bez słowa „rachunek”.
+  - pattern: '(?m)^\s*(?:nadawca|zleceniodawca|płatnik)\b'
+    weight: 2
+  - pattern: '(?m)^\s*(?:odbiorca|beneficjent)\b'
+    weight: 2
+negative:
+  - pattern: '(?<!\w)orzeka'
+    weight: 100
+  - pattern: '(?<!\w)wyrok'
+    weight: 100
+  # Tylko sygnatura KIO (wyrok/postanowienie).
+  - pattern: 'sygn\.\s*akt\s*:?\s*KIO'
+    weight: 100
+  - pattern: 'official journal'
+    weight: 100
+  - pattern: 'see the notice on ted'
+    weight: 100
+  - pattern: 'ogłoszenie o zamówieniu lub ogłoszenie o koncesji'
+    weight: 100
+  - pattern: 'odwołujący\s*:'
+    weight: 100
+  - pattern: '(?m)^\s*odwołujący\b'
+    weight: 100
+  - pattern: 'wnos\w*\s+odwołanie'
+    weight: 100
+veto: 50
+schema:
+  przelew_bankowy:
+    data_operacji: null
+    kwota: null
+    na_rachunek: null
+    numer_transakcji: null
+    tytul: null
+    z_rachunku: null
+fields:
+  - path: przelew_bankowy.z_rachunku
+    method: candidate
+    kind: iban
+    type: iban
+    description: Rachunek obciążany, 26 cyfr, bez PL i spacji.
+    hints: ["z rachunku", "obciąż", "nadawc", "zleceniodaw", "płatnik"]
+    avoid: ["odbiorc", "beneficjent", "uznawan", "na rachunek", "adresat"]
+    fallback: first
+    normalizer: iban
+  - path: przelew_bankowy.na_rachunek
+    method: candidate
+    kind: iban
+    type: iban
+    description: Rachunek odbiorcy, 26 cyfr, bez PL i spacji.
+    hints: ["na rachunek", "odbiorc", "beneficjent", "uznawan", "adresat"]
+    avoid: ["z rachunku", "nadawc", "zleceniodaw", "obciąż"]
+    fallback: second
+    normalizer: iban
+  - path: przelew_bankowy.kwota
+    method: candidate
+    kind: amount
+    type: amount
+    description: Kwota operacji jako liczba.
+    hints: ["kwota", "wartość", "w kwocie"]
+    avoid: ["wydruk", "wygenerow"]
+    fallback: first
+    normalizer: amount
+  - path: przelew_bankowy.data_operacji
+    method: candidate
+    kind: date
+    type: date
+    description: Data operacji, nie data wydruku potwierdzenia.
+    hints: ["data operacji", "data transakcji", "data realizacji", "data wykonania", "w dniu"]
+    avoid: ["wydruk", "wygenerow"]
+    fallback: first
+    normalizer: date
+  - path: przelew_bankowy.numer_transakcji
+    method: candidate
+    kind: tx
+    description: Numer referencyjny transakcji.
+    hints: ["referencyjn", "nr ref", "identyfikator", "numer transakcji"]
+    avoid: []
+    fallback: first
+    normalizer: text
+  - path: przelew_bankowy.tytul
+    method: span
+    description: Tytuł albo opis przelewu.
+    starts: ["tytuł przelewu", "tytuł płatności", "tytuł operacji", "tytuł transakcji", "tytułem", "tytuł:", "tytuł", "opis:", "opis"]
+    stops: ["kwota", "wartość", "data ", "data\t", "numer ", "nr ref", "typ operacji", "kanał", "status", "identyfikator", "nr transakcji", "nr operacji", "id transakcji", "zrealizowano", "tryb", "waluta", "bank nie", "dokument wygenerowany", "---", "wydruk"]
+    normalizer: text
+# Tryb AI (extraction: llm): opisy pól dla modelu według komentarzy organizatora.
+llm_descriptions:
+  przelew_bankowy.data_operacji: Data wykonania operacji (nie data wydruku potwierdzenia), YYYY-MM-DD.
+  przelew_bankowy.kwota: Kwota przelewu jako liczba.
+  przelew_bankowy.na_rachunek: Rachunek odbiorcy, 26 cyfr bez PL i spacji.
+  przelew_bankowy.z_rachunku: Rachunek nadawcy (obciążany), 26 cyfr bez PL i spacji.
+  przelew_bankowy.numer_transakcji: Numer referencyjny / identyfikator transakcji dokładnie jak w dokumencie albo null.
+  przelew_bankowy.tytul: Pełny tytuł przelewu dokładnie jak w dokumencie.

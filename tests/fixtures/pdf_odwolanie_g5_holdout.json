@@ -1,0 +1,38 @@
+{
+  "OdwolanieKIO": {
+    "data": "2026-10-30",
+    "czynnosc_dzien": "2026-10-22",
+    "czynnosc_powod_id": 7,
+    "czynnosc_opis": "Zaniechanie odrzucenia oferty",
+    "miejscowosc": "Olsztyn"
+  },
+  "Odwolujacy": [
+    {
+      "krs": null,
+      "nazwa": "KOWALCZYK-TRANS Jan Kowalczyk",
+      "nip": "7392014458",
+      "regon": "280611234",
+      "przez-pelnomocnika": 1,
+      "pelnomocnik": {
+        "imie_nazwisko": "Agnieszka Pawlak",
+        "nazwa": "Kancelaria Radcy Prawnego Agnieszka Pawlak",
+        "mail": "a.pawlak@pawlak-kancelaria.example"
+      }
+    }
+  ],
+  "Zamawiajacy": [
+    {
+      "krs": null,
+      "nazwa": "Zarząd Dróg Powiatowych w Olsztynie",
+      "nip": "7393456127",
+      "regon": "519566771",
+      "prowadzacy_postepowanie": null
+    }
+  ],
+  "ZamowieniePubliczne": {
+    "numer_bzp": null,
+    "numer_postepowania": "ZDP.261.40.2026",
+    "numer_ted": "665432-2026",
+    "tytul": "Zimowe utrzymanie dróg powiatowych w sezonie 2026/2027"
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "OdwolanieKIO": {
+    "data": "2026-10-02",
+    "czynnosc_dzien": "2026-09-22",
+    "czynnosc_powod_id": 10,
+    "czynnosc_opis": "Zaniechanie unieważnienia postępowania",
+    "miejscowosc": "Łódź"
+  },
+  "Odwolujacy": [
+    {
+      "krs": "9995049382",
+      "nazwa": "VoltFleet Mobility sp. z o.o.",
+      "nip": "9996152438",
+      "regon": "999726354",
+      "przez-pelnomocnika": 1,
+      "pelnomocnik": {
+        "imie_nazwisko": "Adam Wróbel",
+        "nazwa": "Kancelaria Wróbel & Partnerzy",
+        "mail": "a.wrobel@wrobel-legal.example"
+      }
+    }
+  ],
+  "Zamawiajacy": [
+    {
+      "krs": "9991928375",
+      "nazwa": "Łódzka Spółka Infrastrukturalna sp. z o.o.",
+      "nip": "9998374651",
+      "regon": "999465738",
+      "prowadzacy_postepowanie": null
+    }
+  ],
+  "ZamowieniePubliczne": {
+    "numer_bzp": null,
+    "numer_postepowania": "ZP.271.77.2026",
+    "numer_ted": "999804-2026",
+    "tytul": "Kompleksowa obsługa floty pojazdów elektrycznych oraz infrastruktury ładowania"
+  }
+}

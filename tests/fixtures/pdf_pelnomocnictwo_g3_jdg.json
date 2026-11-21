@@ -1,0 +1,24 @@
+{
+  "mocodawca": [
+    {
+      "data": {
+        "imie_nazwisko": "Krystyna Wójcik",
+        "krs": null,
+        "nazwa": "Biuro Projektowe KW Krystyna Wójcik",
+        "nip": "9461873320",
+        "typ": "osoba_fizyczna"
+      },
+      "podpisujacy": [
+        {
+          "imie_nazwisko": "Krystyna Wójcik"
+        }
+      ]
+    }
+  ],
+  "pelnomocnicy": [
+    {
+      "imie_nazwisko": "Łukasz Mazurek",
+      "pesel": "79062301457"
+    }
+  ]
+}

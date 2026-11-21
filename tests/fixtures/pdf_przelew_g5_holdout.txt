@@ -1,0 +1,11 @@
+Potwierdzenie przelewu krajowego
+Rachunek obciążony: PL 90 1090 2590 0000 0001 4433 2211
+Dane zleceniodawcy: MEDITRONIX Polska sp. z o.o., ul. Fordońska 120, 85-739 Bydgoszcz
+Rachunek beneficjenta: PL 79 1010 1010 0078 6124 3100 0000
+Dane beneficjenta: Urząd Zamówień Publicznych, ul. Postępu 17a, 02-676 Warszawa
+Kwota przelewu: 7 500,00 PLN
+Data zlecenia: 13.07.2026
+Data waluty: 13.07.2026
+Tytuł płatności: Wpis od odwołania SZP/58/2026 MEDITRONIX
+Nr referencyjny transakcji: SAN-0713-55128904
+This confirmation does not require a signature. / Potwierdzenie nie wymaga podpisu.

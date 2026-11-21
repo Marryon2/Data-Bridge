@@ -1,0 +1,11 @@
+{
+  "mocodawca": [
+    {
+      "data": {"imie_nazwisko": "Marek Lis", "krs": null, "nazwa": "MAR-BUD Marek Lis", "nip": "7962874451", "typ": "osoba_fizyczna"},
+      "podpisujacy": [{"imie_nazwisko": "Marek Lis"}]
+    }
+  ],
+  "pelnomocnicy": [
+    {"imie_nazwisko": "Tomasz Nowicki", "pesel": "85031204573"}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "przelew_bankowy": {
+    "data_operacji": "2026-08-11",
+    "kwota": 20000.0,
+    "na_rachunek": "72101010100078612310000000",
+    "numer_transakcji": "82026081101234567",
+    "tytul": "Wpis od odwołania ZP.271.18.2026 Vistral Budownictwo",
+    "z_rachunku": "18102040270000110203456789"
+  }
+}

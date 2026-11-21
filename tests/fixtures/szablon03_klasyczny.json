@@ -1,0 +1,38 @@
+{
+  "OdwolanieKIO": {
+    "data": "2026-05-07",
+    "czynnosc_dzien": "2026-04-27",
+    "czynnosc_powod_id": 1,
+    "czynnosc_opis": "Decyzja o odrzuceniu oferty",
+    "miejscowosc": "Olsztyn"
+  },
+  "Odwolujacy": [
+    {
+      "krs": "9991526374",
+      "nazwa": "Mazury Hydro-Tech sp. z o.o.",
+      "nip": "9994859201",
+      "regon": "999374829",
+      "przez-pelnomocnika": 1,
+      "pelnomocnik": {
+        "imie_nazwisko": "Hanna Kowalska",
+        "nazwa": "Kancelaria Prawna Warmia-Lex",
+        "mail": "h.kowalska@warmialex.example"
+      }
+    }
+  ],
+  "Zamawiajacy": [
+    {
+      "krs": "9998273645",
+      "nazwa": "Przedsiębiorstwo Wodociągów i Kanalizacji sp. z o.o. w Elblągu",
+      "nip": "9991928374",
+      "regon": "999647382",
+      "prowadzacy_postepowanie": null
+    }
+  ],
+  "ZamowieniePubliczne": {
+    "numer_bzp": null,
+    "numer_postepowania": "ZP.271.14.2026",
+    "numer_ted": "999241-2026",
+    "tytul": "Modernizacja przepompowni ścieków wraz z dostawą układów sterowania telemetrycznego"
+  }
+}

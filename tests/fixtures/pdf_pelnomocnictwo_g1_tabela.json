@@ -1,0 +1,24 @@
+{
+  "mocodawca": [
+    {
+      "data": {
+        "imie_nazwisko": null,
+        "krs": "0000521344",
+        "nazwa": "Silvana Catering sp. z o.o.",
+        "nip": "9542761203",
+        "typ": "osoba_prawna"
+      },
+      "podpisujacy": [
+        {
+          "imie_nazwisko": "Renata Głowacka"
+        }
+      ]
+    }
+  ],
+  "pelnomocnicy": [
+    {
+      "imie_nazwisko": "Bartosz Kamiński",
+      "pesel": null
+    }
+  ]
+}

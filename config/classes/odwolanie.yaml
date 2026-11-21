@@ -1,0 +1,352 @@
+name: odwolanie
+description: Odwołanie do Krajowej Izby Odwoławczej
+threshold: 4
+grey: 1
+positive:
+  - pattern: 'odwołujący\s*:'
+    weight: 5
+  # Nagłówek bez dwukropka: „ODWOŁUJĄCY”, „ODWOŁUJĄCY (NAZWA I SIEDZIBA)”.
+  - pattern: '(?m)^\s*odwołujący\b'
+    weight: 5
+  # „wnoszę odwołanie”, „wnosimy odwołanie” — sama czynność wniesienia.
+  - pattern: 'wnos\w*\s+odwołanie'
+    weight: 5
+  - pattern: '(?m)^\s*odwołanie\b'
+    weight: 3
+negative:
+  - pattern: '(?<!\w)orzeka'
+    weight: 100
+  - pattern: '(?<!\w)wyrok'
+    weight: 100
+  # Tylko sygnatura KIO (wyrok/postanowienie). „Sygn. akt postępowania: ZP…” w odwołaniu nie jest wetem.
+  - pattern: 'sygn\.\s*akt\s*:?\s*KIO'
+    weight: 100
+  - pattern: 'official journal'
+    weight: 100
+  - pattern: 'see the notice on ted'
+    weight: 100
+  - pattern: 'ogłoszenie o zamówieniu lub ogłoszenie o koncesji'
+    weight: 100
+veto: 50
+schema:
+  OdwolanieKIO:
+    data: null
+    czynnosc_dzien: null
+    czynnosc_powod_id: null
+    czynnosc_opis: null
+    miejscowosc: null
+  Odwolujacy:
+    - krs: null
+      nazwa: null
+      nip: null
+      regon: null
+      przez-pelnomocnika: null
+      pelnomocnik:
+        imie_nazwisko: null
+        nazwa: null
+        mail: null
+  Zamawiajacy:
+    - krs: null
+      nazwa: null
+      nip: null
+      regon: null
+      prowadzacy_postepowanie: null
+  ZamowieniePubliczne:
+    numer_bzp: null
+    numer_postepowania: null
+    numer_ted: null
+    tytul: null
+scopes:
+  # Etykieta z dwukropkiem lub bez, z dopiskiem w nawiasie; dane mogą stać w tej samej linii co etykieta.
+  odwolujacy:
+    start:
+      - '(?im)^odwołujący\b[^:\n]*:?'
+      # Bez etykiety: Odwołujący to nadawca pisma (nagłówek u góry, przed adresatem i „Zamawiający”).
+      - '\A'
+    end: '(?im)^(zamawiający\b|wykonawca\b|dotyczy\s*:|^odwołanie\s*$|wnoszę)'
+  zamawiajacy:
+    start: '(?im)^zamawiający\b[^:\n]*:?'
+    end: '(?im)^(odwołujący\b|wykonawca\b|dotyczy\b|odwołanie\b|wnoszę)'
+  charge:
+    # „polegających na: 1) …” albo „z dnia X polegającej na …”; data bywa tuż przed etykietą.
+    # Formularze: etykieta „Zaskarżona czynność” / „Przedmiot zaskarżenia” sama w linii, wartość pod nią.
+    # Sama w linii, bo „Zaskarżona czynność Zamawiającego.” w chronologii zdarzeń to opis, nie etykieta.
+    start:
+      - '(?im)^\s*(?:zaskarżona\s+czynność|przedmiot\s+zaskarżenia)\s*:?\s*$'
+      - '(?i)polegając\w*\s+na\s*:?'
+      # Bez „polegającej na”: zdanie „wnosi odwołanie wobec/od …” opisuje zaskarżoną czynność.
+      - '(?i)wnos\w*\s+odwołanie\s+(?:od|wobec|na)\b'
+    before_chars: 250
+    end: '(?i)\s2\)|\bzarzut'
+    fallback_before: '(?i)zarzut nr 1'
+    fallback_chars: 700
+lists:
+  - path: Odwolujacy
+    scope: odwolujacy
+    fields:
+      - path: nazwa
+        method: line
+        description: Pełna nazwa Odwołującego albo lidera konsorcjum.
+        prefer_after: '(?i)lider'
+        skip:
+          - '^(ul\.|al\.|pl\.|os\.|krs\b|nip\b|regon\b|reprezentow|adres\b|tel\.|e-mail|kontakt|przedsiębiorca|\d+\)|składzie\b|konsorcjum\b|\()'
+          - 'odwołując|lider|partner'
+          # Linia nagłówka z miejscowością i datą („Olsztyn, 30 października 2026 r.”).
+          - ',\s+(?:dnia\s+)?\d{1,2}(?:[.\-/]\d{2}[.\-/]\d{4}|\s+[a-ząćęłńóśźż]+\s+\d{4})'
+        join_next: '^(?:o\.\s*o\.|z\s+o\.\s*o\.|sp\.|s\.a\.|spółka)'
+        normalizer: entity
+      - path: krs
+        method: regex
+        type: krs
+        description: KRS Odwołującego lub lidera, jeśli podany.
+        pattern: '(?i)KRS[:\s]*(\d{10})(?!\d)'
+        normalizer: krs
+      - path: nip
+        method: regex
+        type: nip
+        description: NIP Odwołującego lub lidera, jeśli podany.
+        pattern: '(?i)NIP[:\s]*((?:\d[ -]?){9}\d)(?!\d)'
+        normalizer: nip
+      - path: regon
+        method: regex
+        type: regon
+        description: REGON Odwołującego lub lidera, jeśli podany.
+        pattern: '(?i)REGON[:\s]*(\d{9}|\d{14})(?!\d)'
+        normalizer: regon
+      - path: przez-pelnomocnika
+        method: flag
+        description: 1 gdy Odwołujący działa przez pełnomocnika, inaczej 0.
+        pattern: '(?im)reprezentowan|^\s*pełnomocni(?:k|cy)\b'
+        # Pełnomocnik znaleziony poza blokiem Odwołującego (np. boczna kolumna) też oznacza 1.
+        or_filled: pelnomocnik.imie_nazwisko
+        when_match: 1
+        when_miss: 0
+      - path: pelnomocnik.imie_nazwisko
+        method: regex
+        type: person
+        description: Pierwsza osoba w „reprezentowana przez” albo pod etykietą „Pełnomocnik”, bez tytułu, w mianowniku.
+        pattern:
+          - '(?i)reprezentowan\w*\s+przez(?:\s+pełnomocnika)?\s*:\s*(?:(?:r\.\s*pr\.|adw\.|adwokat|radca\s+prawny)\s+)?(?P<value>[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:-[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:-[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?)'
+          # Bez dwukropka („reprezentowana przez r. pr. …”) albo etykieta „PEŁNOMOCNIK ODWOŁUJĄCEGO” / „Pełnomocnik:”.
+          - '(?:(?i:reprezentowan\w*\s+przez)|(?im:^\s*pełnomocni(?:k|cy)\b[^\n:]*:?))\s*(?i:r\.\s*pr\.|adw\.|mec\.|adwokat|radca\s+prawny)\s+(?P<value>[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:-[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?)'
+        normalizer: person
+        nominative: true
+      - path: pelnomocnik.nazwa
+        method: regex
+        description: Nazwa kancelarii z „adres do korespondencji” albo z linii „Kancelaria …”.
+        pattern:
+          - '(?is)adres\s+do\s+korespondencji\s*:\s*(?P<value>.+?)(?:,?\s+ul\.|,?\s+al\.|,?\s+pl\.|tel\.|e-?mail|\n\s*tel)'
+          # Bez etykiety: „Kancelaria …” na początku linii albo po nazwisku („…, Kancelaria X, ul.”), do przecinka.
+          # Nazwa może przejść do następnej linii po „&” albo „i” („Kancelaria Wróbel &” / „Partnerzy”).
+          - '(?m)(?:^|[,–(]\s*)(?P<value>(?:Kancelari|Biuro\s+Prawn)\w*[^,\n(]*(?:(?:(?<=&)|(?<=\si))\n[^,\n(]*)?(?:\n(?=(?i:sp\.|spółka|s\.a\.))[^,\n(]*)?)'
+        normalizer: text
+      - path: pelnomocnik.mail
+        method: regex
+        type: email
+        description: E-mail pełnomocnika z bloku adresu do korespondencji.
+        # Domena może być przełamana po myślniku: „biuro@szymanski-” / „kancelaria.example”.
+        pattern: '(?i)([A-Z0-9._%+\-]+@(?:[A-Z0-9.]|-\n?)+\.[A-Z]{2,})'
+        normalizer: email
+      # Zapas: pismo kancelarii ma nazwę i e-mail w nagłówku (letterhead), a nie przy Odwołującym.
+      - path: pelnomocnik.nazwa
+        method: regex
+        scope: first_page
+        only_if_empty: true
+        description: Nazwa kancelarii z nagłówka pierwszej strony, wielkie litery mogą przechodzić do drugiej linii.
+        pattern: '(?m)\A\s*(?P<value>(?i:kancelaria)\b[^\n]*(?:\n[A-ZĄĆĘŁŃÓŚŹŻ0-9 &.-]+$)?)'
+        normalizer: text
+      - path: pelnomocnik.mail
+        method: regex
+        scope: first_page
+        only_if_empty: true
+        type: email
+        description: E-mail z nagłówka kancelarii (pismo zaczyna się od „Kancelaria”), gdy przy Odwołującym go nie ma.
+        pattern: '(?i)\A\s*kancelaria(?:[^\n]*\n){0,6}?[^\n]*?([A-Z0-9._%+\-]+@(?:[A-Z0-9.]|-\n?)+\.[A-Z]{2,})'
+        normalizer: email
+      # Zapas: pełnomocnik wymieniony tylko w treści pisma, tytuł w dowolnym przypadku; mianownik z podpisu.
+      - path: pelnomocnik.imie_nazwisko
+        method: regex
+        scope: first_page
+        only_if_empty: true
+        type: person
+        description: Osoba po „reprezentowany przez” z tytułem zawodowym w dowolnej formie.
+        pattern: '(?i:reprezentowan\w*\s+przez)\s+(?i:r\.\s*pr\.|adw\.|mec\.|adwokat\w*|radc\w+\s+prawn\w+)\s+(?P<value>[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:-[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?)'
+        normalizer: person
+        nominative: true
+      - path: pelnomocnik.nazwa
+        method: regex
+        scope: first_page
+        only_if_empty: true
+        description: Kancelaria w nawiasie lub po przecinku tuż za pełnomocnikiem z treści pisma.
+        pattern: '(?i:reprezentowan\w*\s+przez)\s+(?i:r\.\s*pr\.|adw\.|mec\.|adwokat\w*|radc\w+\s+prawn\w+)\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:-[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?\s*[(,]\s*(?P<value>(?:Kancelari|Biuro\s+Prawn)\w*[^,()]{0,80})'
+        normalizer: text
+      - path: pelnomocnik.mail
+        method: regex
+        scope: first_page
+        only_if_empty: true
+        type: email
+        description: E-mail w zdaniu o pełnomocniku (do 300 znaków za nazwiskiem).
+        pattern: '(?i:reprezentowan\w*\s+przez)[\s\S]{0,300}?(?P<value>[A-Za-z0-9._%+\-]+@(?:[A-Za-z0-9.]|-\n?)+\.[A-Za-z]{2,})'
+        normalizer: email
+      # Zapas: blok „PEŁNOMOCNIK” poza sekcją Odwołującego (boczna kolumna, metryczka): osoba, kancelaria, e-mail.
+      - path: pelnomocnik.imie_nazwisko
+        method: regex
+        scope: first_page
+        only_if_empty: true
+        type: person
+        description: Osoba pod etykietą „Pełnomocnik” gdziekolwiek na pierwszej stronie.
+        pattern: '(?m)^\s*(?i:pełnomocni(?:k|cy))\b[^\n:]*:?\s*(?i:r\.\s*pr\.|adw\.|mec\.|adwokat|radca\s+prawny)\s+(?P<value>[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:-[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?)'
+        normalizer: person
+        nominative: true
+      - path: pelnomocnik.nazwa
+        method: regex
+        scope: first_page
+        only_if_empty: true
+        description: Linia z „Kancelaria” w bloku „Pełnomocnik”; jednowyrazowa linia pod nią to dokończenie nazwy.
+        pattern: '(?m)^\s*(?i:pełnomocni(?:k|cy))\b[^\n]*\n(?:[^\n]*\n){0,2}?(?P<value>[^\n@]*(?i:kancelari|biuro\s+prawn)[^\n]*(?:\n[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?=\n))?)'
+        normalizer: entity
+      - path: pelnomocnik.mail
+        method: regex
+        scope: first_page
+        only_if_empty: true
+        type: email
+        description: E-mail w bloku „Pełnomocnik” (do 6 linii pod etykietą).
+        pattern: '(?m)^\s*(?i:pełnomocni(?:k|cy))\b[^\n]*\n(?:[^\n]*\n){0,5}?[^\n]*?(?P<value>[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,})'
+        normalizer: email
+  - path: Zamawiajacy
+    scope: zamawiajacy
+    split: '(?m)^\s*\d+\)\s+'
+    fields:
+      - path: nazwa
+        method: line
+        description: Pełna nazwa Zamawiającego.
+        skip:
+          - '^(ul\.|al\.|pl\.|os\.|krs\b|nip\b|regon\b|reprezentow|adres\b|tel\.|e-mail|kontakt|przedsiębiorca|\d+\))'
+          - 'zamawiając|lider|partner|prowadząc'
+        join_next: '^(?:o\.\s*o\.|z\s+o\.\s*o\.|sp\.|s\.a\.|spółka)'
+        normalizer: entity
+      - path: krs
+        method: regex
+        type: krs
+        description: KRS Zamawiającego, jeśli jawnie podany.
+        pattern: '(?i)KRS[:\s]*(\d{10})(?!\d)'
+        normalizer: krs
+      - path: nip
+        method: regex
+        type: nip
+        description: NIP Zamawiającego, jeśli jawnie podany.
+        pattern: '(?i)NIP[:\s]*((?:\d[ -]?){9}\d)(?!\d)'
+        normalizer: nip
+      - path: regon
+        method: regex
+        type: regon
+        description: REGON Zamawiającego, jeśli jawnie podany.
+        pattern: '(?i)REGON[:\s]*(\d{9}|\d{14})(?!\d)'
+        normalizer: regon
+      - path: prowadzacy_postepowanie
+        method: flag
+        description: null przy jednym zamawiającym; 1 lider/prowadzący, 0 pozostali przy wielu.
+        pattern: '(?i)prowadząc|lider'
+        when_match: 1
+        when_miss: 0
+        if_single: null
+fields:
+  - path: OdwolanieKIO.miejscowosc
+    method: regex
+    scope: first_page
+    description: Miejscowość z linii nagłówka „X, dnia …” albo „X DD.MM.RRRR”. Nie z daty w treści zarzutu.
+    pattern: '(?m)^(?P<value>[A-ZĄĆĘŁŃÓŚŹŻ][^,\n]{1,40}),\s+(?:dnia\s+)?(?:\d{1,2}(?:[.\-/]\d{2}[.\-/]\d{4}|\s+\S+\s+\d{4})|\d{4}-\d{2}-\d{2})(?:\s+r\.|\s+roku)?\s*$'
+    normalizer: text
+  - path: OdwolanieKIO.data
+    method: regex
+    scope: first_page
+    type: date
+    description: Data z tej samej linii nagłówka, ISO YYYY-MM-DD. Brak linii nagłówka oznacza null.
+    pattern: '(?m)^[A-ZĄĆĘŁŃÓŚŹŻ][^,\n]{1,40},\s+(?:dnia\s+)?(?P<value>\d{1,2}(?:[.\-/]\d{2}[.\-/]\d{4}|\s+\S+\s+\d{4})|\d{4}-\d{2}-\d{2})'
+    normalizer: date
+  - path: OdwolanieKIO.czynnosc_dzien
+    method: regex
+    scope: charge
+    type: date
+    description: Data czynności uruchamiającej bieg terminu dla pierwszego zarzutu. Nigdy data ustawy („ustawy z dnia 11 września 2019”).
+    pattern: '(?i)(?<!ustawy\s)(?:w dniu|z dnia)\s+(?P<value>\d{1,2}(?:[.\-/]\d{2}[.\-/]\d{4}|\s+[A-Za-ząćęłńóśźż]+\s+\d{4}))'
+    which: first_w_dniu
+    normalizer: date
+  # Ta sama ścieżka drugi raz: jawna etykieta formularza („Data zaskarżonej czynności”, „Czynność: 13.08.2026”) nadpisuje wynik powyżej.
+  - path: OdwolanieKIO.czynnosc_dzien
+    method: regex
+    type: date
+    description: Data czynności z etykiety formularza.
+    pattern: '(?i)(?:data\s+zaskarżonej\s+czynności|(?<!\w)czynność)\s*:?\s*(?P<value>\d{4}-\d{2}-\d{2}|\d{1,2}[.\-/]\d{2}[.\-/]\d{4})'
+    normalizer: date
+  - path: OdwolanieKIO.czynnosc_powod_id
+    method: first_match
+    scope: charge
+    table: czynnosci
+    type: int
+    description: Identyfikator powodu 1-12 wyłącznie z pierwszego zarzutu.
+  - path: OdwolanieKIO.czynnosc_opis
+    method: lookup
+    from: OdwolanieKIO.czynnosc_powod_id
+    table: czynnosci
+    description: Kanoniczny opis 1:1 z czynnosc_powod_id, nie cytat z pisma.
+  - path: ZamowieniePubliczne.numer_bzp
+    method: regex
+    scope: preamble
+    type: bzp
+    description: Numer ogłoszenia BZP, po normalizacji bez spacji, np. 2026/BZP00999778.
+    pattern: '(?i)(\d{4}\s*/\s*BZP\s*\d+(?:\s*/\s*\d{2})?)'
+    normalizer: bzp
+  - path: ZamowieniePubliczne.numer_ted
+    method: regex
+    scope: preamble
+    type: ted
+    description: Numer TED jako NNNNNN-YYYY.
+    pattern: '(?i)(\d{4}\s*/\s*S\s*\d{1,3}\s*-\s*\d{6}|\d{6}\s*-\s*\d{4})'
+    normalizer: ted
+    which: prefer_s_form
+  - path: ZamowieniePubliczne.numer_postepowania
+    method: regex
+    description: Numer referencyjny albo wewnętrzny postępowania.
+    pattern: '(?i)(?:nr\s+referencyjny(?:\s+sprawy)?|numer\s+postępowania|nr\s+postępowania|postępowanie\s+nr|znak\s+sprawy|znak\s+zamawiającego|nr\s+sprawy|nr\s+ref\.)\s*[:.]?\s*(?P<value>[A-ZĄĆĘŁŃÓŚŹŻ]{1,12}(?:[./-][A-ZĄĆĘŁŃÓŚŹŻ0-9]+)+)'
+    normalizer: text
+  - path: ZamowieniePubliczne.tytul
+    method: regex
+    description: Tytuł zamówienia, w cudzysłowie po „pn.” albo pod etykietą „Tytuł/Nazwa zamówienia”.
+    pattern:
+      - '(?is)pn\.?\s*[„"](?P<value>.+?)[”"]'
+      # „Dotyczy postępowania: „…”” albo „Postępowanie: „…””, cudzysłów bez „pn.”.
+      - '(?is)(?:dotyczy\s+postępowania|postępowanie)\s*:?\s*[„"](?P<value>.+?)[”"]'
+      # „Przedmiot zamówienia: X” – wartość w tej samej linii albo w następnej (komórka tabeli).
+      - '(?i:przedmiot\s+zamówienia|tytuł\s+zamówienia|nazwa\s+zamówienia)\s*:[ \t]*\n?[ \t]*(?P<value>\S[^\n]*(?:\n[a-ząćęłńóśźż0-9][^\n]*)*)'
+      # Etykieta formularza; tytuł to pierwsza linia i linie kontynuacji zaczynające się małą literą.
+      - '(?:(?i:tytuł\s+zamówienia|nazwa\s+zamówienia))[^\n]*\n(?P<value>[^\n]+(?:\n[a-ząćęłńóśźż0-9][^\n]*)*)'
+    normalizer: text
+# Tryb AI (extraction: llm): opisy pól dla modelu według komentarzy organizatora; ścieżki bez indeksów list.
+llm_descriptions:
+  OdwolanieKIO.data: Data pisma z linii „<Miejscowość>, <data>” albo „<Miejscowość>, dnia <data>” (zwykle na początku pierwszej strony, czasem w ramce lub kolumnie), zapisana jako YYYY-MM-DD. Null tylko gdy takiej linii nie ma.
+  OdwolanieKIO.miejscowosc: Miejscowość z tej samej linii „<Miejscowość>, <data>”. Null tylko gdy takiej linii nie ma.
+  OdwolanieKIO.czynnosc_dzien: Data zaskarżonej czynności z pierwszego zarzutu (kiedy Odwołujący się o niej dowiedział / z dnia), YYYY-MM-DD; nigdy data ustawy.
+  OdwolanieKIO.czynnosc_powod_id: Liczba 1-12 ze słownika, ustalana wyłącznie z pierwszego zarzutu.
+  OdwolanieKIO.czynnosc_opis: null (uzupełniane automatycznie).
+  Odwolujacy: Jeden element - Odwołujący albo lider konsorcjum.
+  Odwolujacy.nazwa: Pełna nazwa Odwołującego (lidera konsorcjum) z formą prawną, bez adresu.
+  Odwolujacy.krs: KRS Odwołującego, 10 cyfr albo null.
+  Odwolujacy.nip: NIP Odwołującego, 10 cyfr albo null.
+  Odwolujacy.regon: REGON Odwołującego, 9 lub 14 cyfr albo null.
+  Odwolujacy.przez-pelnomocnika: 1 gdy Odwołujący działa przez pełnomocnika, inaczej 0.
+  Odwolujacy.pelnomocnik.imie_nazwisko: Imię i nazwisko jednego (pierwszego) pełnomocnika w mianowniku, bez tytułu.
+  Odwolujacy.pelnomocnik.nazwa: Nazwa kancelarii / podmiotu zatrudniającego pełnomocnika.
+  Odwolujacy.pelnomocnik.mail: E-mail pełnomocnika.
+  Zamawiajacy: Zamawiający; więcej elementów tylko przy kilku zamawiających.
+  Zamawiajacy.nazwa: Pełna nazwa Zamawiającego, bez adresu.
+  Zamawiajacy.krs: KRS Zamawiającego tylko gdy jawnie podany, inaczej null.
+  Zamawiajacy.nip: NIP Zamawiającego, 10 cyfr albo null.
+  Zamawiajacy.regon: REGON Zamawiającego albo null.
+  Zamawiajacy.prowadzacy_postepowanie: Przy jednym zamawiającym null; przy kilku 1 dla prowadzącego postępowanie (lidera), 0 dla pozostałych.
+  ZamowieniePubliczne.numer_bzp: Numer ogłoszenia w Biuletynie Zamówień Publicznych (zawiera „BZP”) dokładnie jak w dokumencie, albo null. Nie numer TED.
+  ZamowieniePubliczne.numer_ted: Numer ogłoszenia w Dzienniku Urzędowym UE (TED, zawiera „/S”) dokładnie jak w dokumencie, albo null.
+  ZamowieniePubliczne.numer_postepowania: Numer referencyjny / znak sprawy postępowania dokładnie jak w dokumencie.
+  ZamowieniePubliczne.tytul: Tytuł zamówienia dokładnie jak w dokumencie, bez cudzysłowów.
+llm_max_items:
+  Odwolujacy: 1

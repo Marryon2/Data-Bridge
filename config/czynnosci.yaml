@@ -1,0 +1,73 @@
+# Opis jest wyłącznym słownikiem id -> tekst. Id 12 nie występuje w zbiorze treningowym.
+opis:
+  1: Decyzja o odrzuceniu oferty
+  2: Ogłoszenie wyboru oferty
+  3: Decyzja o wykluczeniu wykonawcy
+  4: Publikacja specyfikacji warunków zamówienia (SWZ)
+  5: Modyfikacja treści SWZ
+  6: Odpowiedzi/wyjaśnienia do SWZ
+  7: Zaniechanie odrzucenia oferty
+  8: Zaniechanie wykluczenia wykonawcy
+  9: Decyzja o unieważnieniu postępowania
+  10: Zaniechanie unieważnienia postępowania
+  11: Opis przedmiotu zamówienia (OPZ)
+  12: Projektowane postanowienia umowy
+# Kolejność ma znaczenie: węższe frazy przed szerszymi. Dotyczy tylko pierwszego zarzutu.
+match:
+  - pattern: 'nie\s+odrzuci'
+    id: 7
+  - pattern: 'zaniechani\w*(?:\s+(?!odrzuc|wyklucz|unieważni)\S+){0,3}?\s+odrzuceni'
+    id: 7
+  - pattern: 'nie\s+wykluczy'
+    id: 8
+  - pattern: 'zaniechani\w*(?:\s+(?!odrzuc|wyklucz|unieważni)\S+){0,3}?\s+wykluczeni'
+    id: 8
+  - pattern: 'zaniecha\w*\s+unieważnieni'
+    id: 10
+  - pattern: 'zaniechani\w*(?:\s+(?!odrzuc|wyklucz|unieważni)\S+){0,3}?\s+unieważnieni'
+    id: 10
+  - pattern: 'unieważni'
+    id: 9
+  - pattern: 'zmodyfikowa\w*\s+treść'
+    id: 5
+  - pattern: 'modyfikacj\w*\s+treści'
+    id: 5
+  - pattern: 'opublikowa\w*\s+specyfikacj'
+    id: 4
+  - pattern: 'publikacj\w*\s+(?:specyfikacj|swz)'
+    id: 4
+  - pattern: 'ustaleniu\s+treści\s+specyfikacji'
+    id: 4
+  - pattern: 'odpowiedzi\s+i\s+wyjaśnieni'
+    id: 6
+  - pattern: 'wyjaśnie(?:ń|nia)\s+(?:do\s+treści|treści)'
+    id: 6
+  - pattern: 'odpowiedzi\s+na\s+pytani'
+    id: 6
+  - pattern: 'udzieleniu\s+odpowiedzi'
+    id: 6
+  - pattern: 'udostępni\w*\s+opis'
+    id: 11
+  - pattern: 'opisan\w*\s+przedmiotu'
+    id: 11
+  - pattern: 'opis(?:u|em|ie)?\s+przedmiotu\s+zamówienia'
+    id: 11
+  - pattern: 'projektowan\w*\s+postanowien'
+    id: 12
+  - pattern: 'poinformowa\w*\s+o\s+odrzuceniu'
+    id: 1
+  - pattern: 'odrzuceni\w*\s+ofert'
+    id: 1
+  - pattern: 'ogłosi\w*\s+wybór'
+    id: 2
+  - pattern: 'wyborze\s+(?:jako\s+najkorzystniejszej|ofert)'
+    id: 2
+  - pattern: 'wyboru\s+ofert'
+    id: 2
+  # „Wybór oferty najkorzystniejszej” w formularzu albo tabeli „Zaskarżona czynność”.
+  - pattern: 'wybór\s+(?:jako\s+najkorzystniejszej\s+)?ofert'
+    id: 2
+  - pattern: 'poinformowa\w*\s+o\s+wykluczeniu'
+    id: 3
+  - pattern: 'wykluczeni\w*'
+    id: 3

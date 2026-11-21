@@ -1,0 +1,38 @@
+{
+  "OdwolanieKIO": {
+    "data": "2026-06-15",
+    "czynnosc_dzien": "2026-06-05",
+    "czynnosc_powod_id": 2,
+    "czynnosc_opis": "Ogłoszenie wyboru oferty",
+    "miejscowosc": "Białystok"
+  },
+  "Odwolujacy": [
+    {
+      "krs": "9993019284",
+      "nazwa": "Podlasie Road & Bridge S.A.",
+      "nip": "9995192038",
+      "regon": "999817264",
+      "przez-pelnomocnika": 1,
+      "pelnomocnik": {
+        "imie_nazwisko": "Kamil Szymański",
+        "nazwa": "Kancelaria Adwokacka Szymański",
+        "mail": "biuro@szymanski-kancelaria.example"
+      }
+    }
+  ],
+  "Zamawiajacy": [
+    {
+      "krs": null,
+      "nazwa": "Generalna Dyrekcja Dróg Wojewódzkich – Oddział Wschód",
+      "nip": "9997483920",
+      "regon": "999102938",
+      "prowadzacy_postepowanie": null
+    }
+  ],
+  "ZamowieniePubliczne": {
+    "numer_bzp": null,
+    "numer_postepowania": "GDDW.271.40.2026",
+    "numer_ted": "999512-2026",
+    "tytul": "Rozbudowa drogi wojewódzkiej nr 676 na odcinku od km 12+400 do km 19+850 wraz z budową obiektów inżynierskich"
+  }
+}

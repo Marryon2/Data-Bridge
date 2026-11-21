@@ -1,0 +1,10 @@
+Potwierdzenie przelewu / Transfer confirmation
+Nordbank Polska
+Kwota / Amount: 20 000,00 PLN
+Data wykonania / Execution date: 2026-07-02
+Nadawca / Sender: Fenwick Polska S.A.
+IBAN nadawcy / Sender IBAN: PL27114020040000300201355387
+Odbiorca / Beneficiary: Urząd Zamówień Publicznych
+IBAN odbiorcy / Beneficiary IBAN: PL 88 1010 1010 0000 2213 9800 0000
+Tytuł / Reference: Wpis od odwołania, nr postępowania DZP-2026-11
+ID transakcji / Transaction ID: TX-7781-2026-0702

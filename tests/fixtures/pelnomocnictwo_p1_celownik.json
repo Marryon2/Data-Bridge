@@ -1,0 +1,12 @@
+{
+  "mocodawca": [
+    {
+      "data": {"imie_nazwisko": null, "krs": "0000731256", "nazwa": "Morvena Logistyka sp. z o.o.", "nip": "5842781190", "typ": "osoba_prawna"},
+      "podpisujacy": [{"imie_nazwisko": "Karolina Mazur"}, {"imie_nazwisko": "Tomasz Bielecki"}]
+    }
+  ],
+  "pelnomocnicy": [
+    {"imie_nazwisko": "Anna Wiśniewska", "pesel": null},
+    {"imie_nazwisko": "Piotr Zieliński", "pesel": null}
+  ]
+}

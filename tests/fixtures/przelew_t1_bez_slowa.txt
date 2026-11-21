@@ -1,0 +1,13 @@
+Potwierdzenie transakcji
+Bank Nordycki Polska S.A.
+Rodzaj transakcji: Płatność na rachunek urzędu
+Data transakcji: 18.05.2026
+Data księgowania: 19.05.2026
+Nadawca: Kornik Instalacje sp. z o.o., ul. Leśna 4, 61-001 Poznań
+Rachunek nadawcy: 12 1050 1520 1000 0090 3021 4455
+Odbiorca: Urząd Miasta Stołecznego Warszawy
+Rachunek odbiorcy: 21 1030 1508 0000 0005 5000 0070
+Tytuł: Opłata skarbowa za pełnomocnictwo - odwołanie KIO, ZP/14/2026
+Kwota: 17,00 PLN
+Identyfikator transakcji: 2026051800873421
+Dokument wygenerowany elektronicznie, nie wymaga podpisu.

@@ -1,0 +1,38 @@
+{
+  "OdwolanieKIO": {
+    "data": "2026-09-29",
+    "czynnosc_dzien": "2026-09-19",
+    "czynnosc_powod_id": 11,
+    "czynnosc_opis": "Opis przedmiotu zamówienia (OPZ)",
+    "miejscowosc": "Warszawa"
+  },
+  "Odwolujacy": [
+    {
+      "krs": "9997182930",
+      "nazwa": "AeroSat Komunikacja S.A.",
+      "nip": "9993847561",
+      "regon": "999293847",
+      "przez-pelnomocnika": 1,
+      "pelnomocnik": {
+        "imie_nazwisko": "Jakub Lewandowski",
+        "nazwa": "KANCELARIA PRAWA ZAMÓWIEŃ PUBLICZNYCH LEXPRO",
+        "mail": "biuro@lexpro-kancelaria.example"
+      }
+    }
+  ],
+  "Zamawiajacy": [
+    {
+      "krs": null,
+      "nazwa": "Polska Agencja Żeglugi Powietrznej",
+      "nip": "9991122445",
+      "regon": "999556677",
+      "prowadzacy_postepowanie": null
+    }
+  ],
+  "ZamowieniePubliczne": {
+    "numer_bzp": null,
+    "numer_postepowania": "PAŻP/271/64/2026",
+    "numer_ted": "999612-2026",
+    "tytul": "Dostawa i uruchomienie stacji naziemnych łączności satelitarnej"
+  }
+}

@@ -1,0 +1,13 @@
+# Własny serwer Ollama z polskim modelem Bielik. Natywne API /api/chat, bo tylko ono pozwala ustawić num_ctx
+# (API /v1 zgodne z OpenAI ucina prompt do 4096 tokenów). Bez klucza: api_key_env pusty.
+# Dla Mistral La Plateforme: endpoint https://api.mistral.ai/v1/chat/completions, name ministral-3b-latest,
+# api_key_env MISTRAL_API_KEY.
+name: SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M
+endpoint: http://loczeq.com:11434/api/chat
+api_key_env: ""
+num_ctx: 16384
+timeout_s: 300
+temperature: 0
+json_mode: true
+# llm: klasa i JSON z modelu (reguły tylko, gdy serwer nie odpowie). rules: same reguły.
+extraction: llm

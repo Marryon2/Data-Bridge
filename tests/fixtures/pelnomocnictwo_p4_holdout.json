@@ -1,0 +1,11 @@
+{
+  "mocodawca": [
+    {
+      "data": {"imie_nazwisko": null, "krs": "0000654321", "nazwa": "Tervio Systems Spółka Akcyjna", "nip": "1132456789", "typ": "osoba_prawna"},
+      "podpisujacy": [{"imie_nazwisko": "Wojciech Pawlak"}, {"imie_nazwisko": "Magdalena Król"}]
+    }
+  ],
+  "pelnomocnicy": [
+    {"imie_nazwisko": "Michał Kaczmarczyk", "pesel": null}
+  ]
+}

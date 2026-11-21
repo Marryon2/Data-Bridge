@@ -1,0 +1,12 @@
+POTWIERDZENIE PRZELEWU
+PKB Bank Polski
+Zleceniodawca: Tervio Systems S.A.
+Z rachunku: PL 61 1090 1014 0000 0712 1981 2874
+Beneficjent: Urząd Zamówień Publicznych
+Na rachunek: PL 09 1010 1010 0000 2222 3100 0000
+Kwota operacji: -15 000,00 PLN
+Data zlecenia: 2026-06-10
+Data realizacji: 2026-06-11
+Tytuł przelewu: Wpis od odwołania - postępowanie 2026/BZP 00123456/01
+Nr transakcji: 0611/2026/88412
+Status: Zrealizowany

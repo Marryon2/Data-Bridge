@@ -1,0 +1,15 @@
+{
+  "mocodawca": [
+    {
+      "data": {"imie_nazwisko": null, "krs": "0000412398", "nazwa": "Kornik Instalacje sp. z o.o.", "nip": "7781422391", "typ": "osoba_prawna"},
+      "podpisujacy": [{"imie_nazwisko": "Adam Wróblewski"}]
+    },
+    {
+      "data": {"imie_nazwisko": null, "krs": "0000287711", "nazwa": "Fenwick Polska S.A.", "nip": "5262984117", "typ": "osoba_prawna"},
+      "podpisujacy": [{"imie_nazwisko": "Beata Sokołowska"}, {"imie_nazwisko": "Grzegorz Lipiński"}]
+    }
+  ],
+  "pelnomocnicy": [
+    {"imie_nazwisko": "Joanna Pietrzak", "pesel": null}
+  ]
+}

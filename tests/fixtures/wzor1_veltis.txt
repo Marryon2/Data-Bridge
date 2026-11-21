@@ -1,0 +1,59 @@
+Warszawa, dnia 14 kwietnia 2026 roku
+Sygn. akt postępowania: ZP.112.2026
+Prezes Krajowej Izby Odwoławczej
+ul. Postępu 17A
+02-676 Warszawa
+ODWOŁUJĄCY:
+Veltis IT Solutions sp. z o.o.
+ul. Królewska 42, 00-103 Warszawa
+KRS: 9991048291, NIP: 9994120983, REGON:
+999812340
+reprezentowany przez: r. pr. Marek Kowalczyk
+Kancelaria Prawna LexVeltis, ul. Sienna 18, 00-820
+Warszawa
+e-mail: kancelaria@lexveltis.example
+ZAMAWIAJĄCY:
+Północny Zarząd Dróg i Mostów S.A.
+ul. Morska 114, 81-225 Gdynia
+KRS: 9998741205, NIP: 9993019284, REGON:
+999543219
+e-mail: przetargi@pzdim.example
+O DWO ŁA N I E
+Dotyczy postępowania o udzielenie zamówienia publicznego:
+Tryb: przetarg nieograniczony pn. „Wdrożenie zintegrowanego systemu zarządzania infrastrukturą
+drogową wraz z dostawą serwerów”, nr referencyjny: ZP.112.2026, ogłoszenie TED: 2026/S 062-999118
+(999118-2026).
+Działając w imieniu Odwołującego – Veltis IT Solutions sp. z o.o. – na podstawie załączonego
+pełnomocnictwa oraz art. 513 pkt 1 i 2 w zw. z art. 515 ust. 1 pkt 1 lit. a ustawy z dnia 11 września 2019 r. –
+Prawo zamówień publicznych (dalej: „Pzp”), wnoszę odwołanie wobec czynności Zamawiającego z dnia 4
+kwietnia 2026 roku polegającej na odrzuceniu oferty Odwołującego na podstawie art. 226 ust. 1
+pkt 5 Pzp.
+I. Zarzuty odwołania
+Zaskarżonej czynności Zamawiającego zarzucam naruszenie:
+1. art. 226 ust. 1 pkt 5 Pzp w zw. z art. 16 pkt 1 i 2 Pzp – poprzez bezpodstawne odrzucenie oferty
+Odwołującego jako rzekomo niezgodnej z warunkami zamówienia, mimo że zaoferowane
+oprogramowanie spełnia wszystkie wymogi funkcjonalne określone w Opisie Przedmiotu Zamówienia;
+2. art. 223 ust. 1 Pzp – poprzez zaniechanie wezwania Odwołującego do złożenia wyjaśnień dotyczących
+architektury modułu raportującego przed podjęciem decyzji o odrzuceniu oferty;
+3. art. 239 ust. 1 Pzp – poprzez dokonanie wyboru oferty mniej korzystnej ekonomicznie w wyniku
+wadliwej eliminacji oferty Odwołującego.
+II. Żądania odwołania
+W oparciu o powyższe zarzuty wnoszę o uwzględnienie odwołania w całości oraz nakazanie
+Zamawiającemu:
+Wzór 1 (01) – Odwołanie do KIO | Veltis IT Solutions sp. z o.o. Strona 1 z 2
+1. unieważnienia czynności wyboru oferty najkorzystniejszej oraz unieważnienia czynności odrzucenia
+oferty Odwołującego;
+2. powtórzenia czynności badania i oceny ofert z uwzględnieniem oferty złożonej przez Veltis IT Solutions
+sp. z o.o.;
+3. zasądzenia od Zamawiającego na rzecz Odwołującego kosztów postępowania odwoławczego według
+norm przepisanych.
+III. Uzasadnienie i załączniki
+Odwołujący powziął wiadomość o odrzuceniu swojej oferty w dniu 4 kwietnia 2026 roku za pośrednictwem
+platformy zakupowej Zamawiającego, tym samym ustawowy 10-dniowy termin na wniesienie odwołania
+został dochowany. Zamawiający błędnie zinterpretował kartę katalogową produktu, utożsamiając brak
+odrębnej licencji bazodanowej z brakiem obsługi relacyjnych baz danych, podczas gdy silnik ten jest
+wbudowany w rdzeń aplikacji.
+Załączniki: 1) pełnomocnictwo procesowe; 2) dowód uiszczenia wpisu od odwołania; 3) potwierdzenie
+przesłania kopii odwołania Zamawiającemu.
+r. pr. Marek Kowalczyk
+Wzór 1 (01) – Odwołanie do KIO | Veltis IT Solutions sp. z o.o. Strona 2 z 2

@@ -1,0 +1,38 @@
+{
+  "OdwolanieKIO": {
+    "data": "2026-09-02",
+    "czynnosc_dzien": "2026-08-24",
+    "czynnosc_powod_id": 9,
+    "czynnosc_opis": "Decyzja o unieważnieniu postępowania",
+    "miejscowosc": "Wrocław"
+  },
+  "Odwolujacy": [
+    {
+      "krs": "0000367120",
+      "nazwa": "Orbitech Systemy Informatyczne S.A.",
+      "nip": "8992755301",
+      "regon": "021345678",
+      "przez-pelnomocnika": 1,
+      "pelnomocnik": {
+        "imie_nazwisko": "Damian Wilk",
+        "nazwa": "Wilk Legal Kancelaria Radcy Prawnego",
+        "mail": "d.wilk@wilklegal.example"
+      }
+    }
+  ],
+  "Zamawiajacy": [
+    {
+      "krs": null,
+      "nazwa": "Uniwersytet Ekonomiczny we Wrocławiu",
+      "nip": "8960006577",
+      "regon": "000001645",
+      "prowadzacy_postepowanie": null
+    }
+  ],
+  "ZamowieniePubliczne": {
+    "numer_bzp": "2026/BZP00298765/01",
+    "numer_postepowania": "IZP.2710.31.2026",
+    "numer_ted": null,
+    "tytul": "Dostawa i wdrożenie zintegrowanego systemu zarządzania uczelnią"
+  }
+}

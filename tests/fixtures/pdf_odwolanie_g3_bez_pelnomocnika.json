@@ -1,0 +1,38 @@
+{
+  "OdwolanieKIO": {
+    "data": "2026-07-13",
+    "czynnosc_dzien": "2026-07-03",
+    "czynnosc_powod_id": 11,
+    "czynnosc_opis": "Opis przedmiotu zamówienia (OPZ)",
+    "miejscowosc": "Bydgoszcz"
+  },
+  "Odwolujacy": [
+    {
+      "krs": "0000451278",
+      "nazwa": "MEDITRONIX Polska sp. z o.o.",
+      "nip": "9532694411",
+      "regon": "341256780",
+      "przez-pelnomocnika": 0,
+      "pelnomocnik": {
+        "imie_nazwisko": null,
+        "nazwa": null,
+        "mail": null
+      }
+    }
+  ],
+  "Zamawiajacy": [
+    {
+      "krs": null,
+      "nazwa": "Szpital Uniwersytecki nr 1 im. dr. Antoniego Jurasza w Bydgoszczy",
+      "nip": "5542345678",
+      "regon": "000288900",
+      "prowadzacy_postepowanie": null
+    }
+  ],
+  "ZamowieniePubliczne": {
+    "numer_bzp": "2026/BZP00351120",
+    "numer_postepowania": "SZP/58/2026",
+    "numer_ted": null,
+    "tytul": "Dostawa tomografu komputerowego wraz z instalacją i szkoleniem personelu"
+  }
+}

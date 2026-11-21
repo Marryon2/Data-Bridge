@@ -1,0 +1,14 @@
+services:
+  odwolania2json:
+    build: .
+    env_file:
+      - .env
+    environment:
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      DATA_DIR: ${DATA_DIR:-/data/hacknation-2026}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./input:/app/input
+      - ./output:/app/output
+      - ./trace:/app/trace

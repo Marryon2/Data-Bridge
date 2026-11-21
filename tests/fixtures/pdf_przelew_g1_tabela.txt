@@ -1,0 +1,22 @@
+Powszechny Bank Kredytowy S.A.
+Potwierdzenie wykonania przelewu
+Data wygenerowania: 2026-08-14 10:22
+Rachunek nadawcy
+PL 18 1020 4027 0000 1102 0345 6789
+Nazwa nadawcy
+Vistral Budownictwo sp. z o.o., ul. Wielicka 250, 30-663
+Kraków
+Rachunek odbiorcy
+PL 72 1010 1010 0078 6123 1000 0000
+Nazwa odbiorcy
+Urząd Zamówień Publicznych
+Tytuł
+Wpis od odwołania ZP.271.18.2026 Vistral Budownictwo
+Kwota
+20 000,00 PLN
+Data operacji
+2026-08-11
+Numer referencyjny
+82026081101234567
+Status
+Wykonany

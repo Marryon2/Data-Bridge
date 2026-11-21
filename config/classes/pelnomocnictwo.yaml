@@ -1,0 +1,97 @@
+name: pelnomocnictwo
+description: Pełnomocnictwo do działania w postępowaniu
+threshold: 3
+grey: 1
+positive:
+  - pattern: 'pełnomocnictwo'
+    weight: 4
+  - pattern: 'mocodawca'
+    weight: 4
+  - pattern: 'umocow'
+    weight: 3
+  - pattern: 'p\s+e\s+ł\s+n\s+o\s+m\s+o\s+c'
+    weight: 4
+  - pattern: 'ustanawiam|upoważniam|udzielam pełnomocnictwa|udziela pełnomocnictwa|udzielają pełnomocnictwa'
+    weight: 3
+negative:
+  - pattern: '(?<!\w)orzeka'
+    weight: 100
+  - pattern: '(?<!\w)wyrok'
+    weight: 100
+  # Tylko sygnatura KIO (wyrok/postanowienie), nie każda sygnatura w treści pełnomocnictwa.
+  - pattern: 'sygn\.\s*akt\s*:?\s*KIO'
+    weight: 100
+  - pattern: 'official journal'
+    weight: 100
+  - pattern: 'see the notice on ted'
+    weight: 100
+  - pattern: 'ogłoszenie o zamówieniu lub ogłoszenie o koncesji'
+    weight: 100
+  - pattern: 'odwołujący\s*:'
+    weight: 100
+  # Odwołanie wspomina „pełnomocnictwo procesowe” w załącznikach; te sygnały wskazują, że to samo odwołanie.
+  - pattern: '(?m)^\s*odwołujący\b'
+    weight: 100
+  - pattern: 'wnos\w*\s+odwołanie'
+    weight: 100
+veto: 50
+schema:
+  mocodawca:
+    - data:
+        imie_nazwisko: null
+        krs: null
+        nazwa: null
+        nip: null
+        typ: null
+      podpisujacy:
+        - imie_nazwisko: null
+  pelnomocnicy:
+    - imie_nazwisko: null
+      pesel: null
+lists:
+  - path: mocodawca
+    method: clusters
+    kind: nip
+    description: Podmioty udzielające pełnomocnictwa. Jeden klaster na NIP przed zwrotem umocowania.
+    window: 320
+    before:
+      - udzielam pełnomocnictwa
+      - udziela pełnomocnictwa
+      - udzielają pełnomocnictwa
+      - ustanawiam pełnomocnikiem
+      - upoważniam
+      - umocowuj
+    name_patterns:
+      - 'pod firmą\s+(?P<value>.+?),'
+      - 'Mocodawcą jest\s+(?P<value>.+?),'
+      - 'Działając w imieniu\s+(?P<value>.+?)\s*\('
+      - '(?i)(?:jest|imieniu|firmą|^|\n)\s*(?:\d+\)\s*)?(?P<value>[A-ZĄĆĘŁŃÓŚŹŻ0-9][^,\n]{2,90}?(?:sp\.\s*z\s*o\.\s*o\.(?:\s*sp\.\s*k\.)?|S\.A\.|sp\.\s*k\.|sp\.\s*j\.|sp\.k\.|sp\.j\.|spółka\s+(?:akcyjna|jawna|komandytowa|z\s+ograniczoną\s+odpowiedzialnością)))'
+    person_pattern: '(?:podpisan\w+|\bJa,(?!\s+niże?j))\s+(?P<value>[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)'
+    signer_stop: '(?i)pełnomocnictwo\s+przyjmuję|pełnomocnik\s+przyjmuję'
+  - path: pelnomocnicy
+    method: persons
+    description: Osoby umocowane. Imię i nazwisko w mianowniku, bez tytułu. PESEL jako napis.
+    # {osoba} = „Imię Nazwisko” z wielkich liter. Tylko tytuł jest bez rozróżniania wielkości liter.
+    patterns:
+      - pattern: '(?<!\w)(?i:r\.\s*pr\.|adw\.|mec\.|adwokat|radca\s+prawny)\s+{osoba}'
+      - pattern: '(?<!\w)(?i:radcy\s+prawnemu|adwokatowi|aplikantowi\s+\w+|panu)\s+{osoba}'
+        case: dative
+      # „reprezentowana przez Pana X – Prezesa” to podpisujący, nie pełnomocnik.
+      - pattern: '(?<!\w)(?i:radcę\s+prawnego|adwokata|aplikanta\s+\w+|pana|panią)\s+{osoba}(?![,\s]*[–-]\s*(?i:prezes|wiceprezes|członk|prokurent|wspólnik))'
+        case: accusative
+      # Formularz/tabela: „PEŁNOMOCNIK:” albo „DANE PEŁNOMOCNIKA”, pod spodem „Imię i nazwisko” (z dwukropkiem lub w komórce).
+      - pattern: '(?i:pełnomocni(?:k|ka|cy))[^\n]*\n\s*(?i:imię\s+i\s+nazwisko)\s*:?\s*{osoba}'
+    pesel_pattern: '(?i)PESEL[:\s]*(\d{11})'
+# Tryb AI (extraction: llm): opisy pól dla modelu według komentarzy organizatora; ścieżki bez indeksów list.
+llm_descriptions:
+  mocodawca: Podmioty udzielające pełnomocnictwa; więcej niż jeden przy konsorcjum.
+  mocodawca.data.imie_nazwisko: Imię i nazwisko mocodawcy tylko gdy jest osobą fizyczną; dla spółki null.
+  mocodawca.data.krs: Numer KRS mocodawcy (10 cyfr) albo null.
+  mocodawca.data.nazwa: Pełna nazwa mocodawcy (firma) razem z formą prawną, bez adresu.
+  mocodawca.data.nip: NIP mocodawcy, 10 cyfr.
+  mocodawca.data.typ: Dokładnie "osoba_prawna" (spółka, ma KRS) albo "osoba_fizyczna".
+  mocodawca.podpisujacy.imie_nazwisko: Imię i nazwisko jednej osoby podpisującej w imieniu tego mocodawcy (jedna osoba na element listy).
+  pelnomocnicy.imie_nazwisko: Imię i nazwisko jednego pełnomocnika w mianowniku, bez tytułu (jedna osoba na element listy).
+  pelnomocnicy.pesel: PESEL pełnomocnika (11 cyfr) albo null.
+llm_enum:
+  mocodawca.data.typ: [osoba_prawna, osoba_fizyczna]

@@ -1,0 +1,38 @@
+{
+  "OdwolanieKIO": {
+    "data": "2026-04-14",
+    "czynnosc_dzien": "2026-04-04",
+    "czynnosc_powod_id": 1,
+    "czynnosc_opis": "Decyzja o odrzuceniu oferty",
+    "miejscowosc": "Warszawa"
+  },
+  "Odwolujacy": [
+    {
+      "krs": "9991048291",
+      "nazwa": "Veltis IT Solutions sp. z o.o.",
+      "nip": "9994120983",
+      "regon": "999812340",
+      "przez-pelnomocnika": 1,
+      "pelnomocnik": {
+        "imie_nazwisko": "Marek Kowalczyk",
+        "nazwa": "Kancelaria Prawna LexVeltis",
+        "mail": "kancelaria@lexveltis.example"
+      }
+    }
+  ],
+  "Zamawiajacy": [
+    {
+      "krs": "9998741205",
+      "nazwa": "Północny Zarząd Dróg i Mostów S.A.",
+      "nip": "9993019284",
+      "regon": "999543219",
+      "prowadzacy_postepowanie": null
+    }
+  ],
+  "ZamowieniePubliczne": {
+    "numer_bzp": null,
+    "numer_postepowania": "ZP.112.2026",
+    "numer_ted": "999118-2026",
+    "tytul": "Wdrożenie zintegrowanego systemu zarządzania infrastrukturą drogową wraz z dostawą serwerów"
+  }
+}

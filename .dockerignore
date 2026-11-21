@@ -1,0 +1,8 @@
+graphify-out/
+desktop.ini
+.env
+.venv/
+input/
+output/
+trace/
+.pytest_cache/

@@ -1,0 +1,35 @@
+{
+  "mocodawca": [
+    {
+      "data": {
+        "imie_nazwisko": null,
+        "krs": "0000771203",
+        "nazwa": "Portline Logistics Spółka Akcyjna",
+        "nip": "8513245679",
+        "typ": "osoba_prawna"
+      },
+      "podpisujacy": [
+        {
+          "imie_nazwisko": "Hanna Szulc"
+        },
+        {
+          "imie_nazwisko": "Marcin Olszewski"
+        }
+      ]
+    }
+  ],
+  "pelnomocnicy": [
+    {
+      "imie_nazwisko": "Paweł Górski",
+      "pesel": null
+    },
+    {
+      "imie_nazwisko": "Marta Kubiak",
+      "pesel": null
+    },
+    {
+      "imie_nazwisko": "Jakub Szymański",
+      "pesel": "96021507731"
+    }
+  ]
+}
