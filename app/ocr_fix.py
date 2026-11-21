@@ -6,9 +6,10 @@ import re
 
 # --- Warstwa 2: pola o znanym formacie ---------------------------------------------------------
 
-# Tesseract czyta „@” jako G, Q, © albo „(a)”. Adres poza tym ma same małe litery, więc wielka litera w środku zdradza „@”.
+# Tesseract czyta „@” jako G, Q, ©, „G©”, „g©”, „(a)” albo „( ”. Adres poza tym ma same małe litery,
+# więc wielka litera albo symbol w środku zdradza „@”.
 _EMAIL_BROKEN = re.compile(
-    r"(?<![\w@.])([a-z0-9][a-z0-9._%+\-]*?)(?:[GQ©®]|\(a\)|\(at\))([a-z0-9][a-z0-9\-]*(?:\.[a-z0-9\-]+)*\.[a-z]{2,})(?![\w@])"
+    r"(?<![\w@.])([a-z0-9][a-z0-9._%+\-]*?)(?:[GQ©®]{1,2}|g[©®]|\((?:a|at)?\)|\(\s)([a-z0-9][a-z0-9\-]*(?:\.[a-z0-9\-]+)*\.[a-z]{2,})(?![\w@])"
 )
 
 # Litery, które OCR myli z cyframi. Tylko kierunek litera -> cyfra: te pola są czysto cyfrowe.
@@ -22,8 +23,47 @@ _LENGTHS = {"nip": {10}, "regon": {9, 14}, "krs": {10}, "pesel": {11}}
 _IBAN_LIKE = re.compile(rf"(?<![\w])((?:PL\s?)?(?:[{_DIGITISH}]\s?){{25}}[{_DIGITISH}])(?![\w])")
 
 
+# Adres po etykiecie „e-mail:” bez „@”. Gdzie stało „@”, mówi domena znana z innego miejsca dokumentu
+# (strona www albo inny adres); OCR zamienia „@” na 1–2 znaki z tego zbioru („o”, „g©”…).
+_EMAIL_LABELLED = re.compile(r"(?i)(e-?mail\s*:?\s*)([^\s@,;]{5,}?)([.,;]?)(?=\s|$)")
+_AT_LIKE = set("oaeg9GQ0©®@")
+_LOCAL = re.compile(r"[a-z0-9][a-z0-9._%+\-]*")
+
+
+def _known_domains(text: str) -> list[str]:
+    lowered = text.lower()
+    found = re.findall(r"@([a-z0-9\-]+(?:\.[a-z0-9\-]+)+)", lowered) + re.findall(r"\bwww\.([a-z0-9\-]+(?:\.[a-z0-9\-]+)+)", lowered)
+    return sorted({domain.rstrip(".") for domain in found}, key=len, reverse=True)
+
+
 def fix_emails(text: str) -> str:
-    return _EMAIL_BROKEN.sub(r"\1@\2", text)
+    text = _EMAIL_BROKEN.sub(r"\1@\2", text)
+    domains = _known_domains(text)
+
+    def labelled(match: re.Match) -> str:
+        token = match.group(2)
+        for domain in domains:
+            if not token.lower().endswith(domain) or len(token) <= len(domain) + 1:
+                continue
+            prefix = token[: -len(domain)]
+            for k in (2, 1):  # dwa znaki tylko z symbolem („g©”), inaczej zjadłby literę adresu
+                junk, local = prefix[-k:], prefix[:-k]
+                if all(c in _AT_LIKE for c in junk) and (k == 1 or any(not c.isalnum() for c in junk)) and _LOCAL.fullmatch(local):
+                    return match.group(1) + local + "@" + token[-len(domain):] + match.group(3)
+        return match.group(0)
+
+    return _EMAIL_LABELLED.sub(labelled, text)
+
+
+# „&” w nazwach („Krawczyk & Bąk”) OCR czyta jako 8, 6, „8:” albo „6:”. Tylko między dwoma wyrazami z wielkiej litery
+# i nie po słowach, po których zwykle stoi numer („Rozdział 6 Opis”).
+_AMPERSAND = re.compile(r"\b([A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+) (?:[86]|&):? (?=[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+\b)")
+_NUMBERED = {"Rozdział", "Załącznik", "Punkt", "Pakiet", "Część", "Zadanie", "Etap", "Tom", "Dział", "Strona",
+             "Paragraf", "Artykuł", "Lot", "Grupa", "Pozycja", "Numer", "Formularz", "Wzór", "Tabela", "Ust", "Pkt", "Art"}
+
+
+def fix_ampersand(text: str) -> str:
+    return _AMPERSAND.sub(lambda m: m.group(0) if m.group(1) in _NUMBERED else f"{m.group(1)} & ", text)
 
 
 def _digits_fixed(raw: str, lengths: set[int]) -> str | None:
@@ -56,7 +96,66 @@ def fix_numbers(text: str) -> str:
 
 
 def fix_text(text: str) -> str:
-    return fix_numbers(fix_emails(text))
+    return fix_ampersand(fix_numbers(fix_emails(text)))
+
+
+# --- Układ strony: dwie kolumny obok siebie -------------------------------------------------------
+
+def layout_text(lines: list[list[tuple[int, int, int, int, str]]]) -> str | None:
+    """Wiersze z TSV Tesseracta: [(x_od, x_do, y_od, y_do, słowo), ...] w kolejności czytania.
+    Tesseract czyta nagłówek „ODWOŁUJĄCY: … ZAMAWIAJĄCY: …” wiersz po wierszu przez obie kolumny i skleja strony.
+    Ciąg ≥2 wierszy z dużą przerwą w tym samym miejscu to dwie kolumny: najpierw cała lewa, potem cała prawa.
+    Ciąg kończy wiersz przecinający przerwę albo pusta linia nad wierszem (nowa sekcja pisma).
+    None, gdy na stronie nie ma kolumn (wtedy zostaje zwykły tekst Tesseracta)."""
+
+    def height(words):
+        return sorted(w[3] - w[2] for w in words)[len(words) // 2]
+
+    def split(words):
+        for i in range(len(words) - 1):
+            if words[i + 1][0] - words[i][1] > max(40, 2 * height(words)):
+                return words[: i + 1], words[i + 1 :]
+        return None
+
+    def join(words):
+        return " ".join(w[4] for w in words)
+
+    out: list[str] = []
+    run: list[tuple[list, list | None]] = []  # (lewa, prawa albo None) dla wierszy w bieżącym ciągu
+    gutter, found, bottom = None, False, 0
+
+    def flush():
+        nonlocal run, gutter, found
+        if sum(bool(left) and bool(right) for left, right in run) >= 2:
+            found = True
+            out.extend(join(left) for left, _ in run if left)
+            out.extend(join(right) for _, right in run if right)
+        else:
+            out.extend(join((left or []) + (right or [])) for left, right in run)
+        run, gutter = [], None
+
+    for words in lines:
+        if not words:
+            continue
+        parts = split(words)
+        top = min(w[2] for w in words)
+        if gutter is not None and top - bottom > 0.75 * height(words):
+            flush()  # pusta linia: koniec bloku kolumn
+        bottom = max(w[3] for w in words)
+        if parts and gutter is not None and abs(parts[1][0][0] - gutter) <= 40:
+            run.append(parts)
+        elif gutter is not None and words[-1][1] < gutter - 10:
+            run.append((words, None))  # wiersz tylko w lewej kolumnie
+        elif gutter is not None and words[0][0] >= gutter - 40:
+            run.append(([], words))  # wiersz tylko w prawej kolumnie
+        else:
+            flush()
+            if parts:
+                run, gutter = [parts], parts[1][0][0]
+            else:
+                out.append(join(words))
+    flush()
+    return "\n".join(out) if found else None
 
 
 # --- Warstwa 3: nazwy własne – głosowanie wariantów w obrębie dokumentu -----------------------------
@@ -83,7 +182,8 @@ def _variants(value: str, words: list[str]) -> dict[str, int]:
     limit = min(2, len(value) // 8)
     found: dict[str, int] = {}
     for start in range(len(words) - size + 1):
-        chunk = " ".join(words[start : start + size])
+        # Interpunkcja przy krawędzi należy do zdania, nie do nazwy („S.A.,” -> „S.A.”).
+        chunk = " ".join(words[start : start + size]).strip(",;:")
         if chunk == value or _distance(chunk, value, limit) <= limit:
             found[chunk] = found.get(chunk, 0) + 1
     return found

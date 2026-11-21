@@ -3,7 +3,7 @@
 # Dla Mistral La Plateforme: endpoint https://api.mistral.ai/v1/chat/completions, name ministral-3b-latest,
 # api_key_env MISTRAL_API_KEY.
 name: SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M
-endpoint: http://loczeq.com:11434/api/chat
+endpoint: http://34.12.21.105:11434/api/chat
 api_key_env: ""
 num_ctx: 16384
 timeout_s: 300

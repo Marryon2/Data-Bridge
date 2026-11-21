@@ -11,7 +11,7 @@ import copy
 import json
 import re
 
-from app.classify import _score
+from app.classify import _score, classify_text
 from app.config import EMPTY_DOCUMENT
 from app.normalize import NORMALIZERS, as_text
 
@@ -37,6 +37,8 @@ _SYSTEM = (
     "NIP, REGON, KRS, PESEL i numery rachunków jako same cyfry. Kwota jako liczba. "
     "Listy mogą mieć więcej elementów niż we wzorze."
 )
+# Błędy OCR (& jako 8/6, @ jako o/g/©) poprawia skrypt w tekście (app/ocr_fix.py), nie prompt: dopisanie tych zasad
+# do promptu sprawiało, że Bielik 7B gubił pole miejscowosc w odwołaniach (zmierzone na 2 dokumentach A/B).
 
 
 def _descriptions(spec: dict) -> dict[str, str]:
@@ -112,7 +114,10 @@ def _clean_leaf(key: str, value, flat: str, folded: str, digits: str, templates:
     # E-mail bywa przełamany na myślniku („pawlak-” / „kancelaria.example”): porównanie bez spacji.
     haystack = folded.replace(" ", "") if key == "mail" else folded
     if key in _GROUNDED and isinstance(value, str) and value.translate(_FOLD).lower() not in haystack:
-        return None
+        # Adres odtworzony przez model z OCR („sekretariatoszymanski…”): w miejscu „@” w tekście stoją 1–2 inne znaki.
+        local, _, domain = value.lower().partition("@")
+        if not (key == "mail" and domain and re.search(re.escape(local) + r".{1,2}" + re.escape(domain), haystack)):
+            return None
     if key == "czynnosc_powod_id" and value is not None and not 1 <= value <= 12:
         return None
     if norm == "person" and value and not all(word.translate(_FOLD).lower()[:4] in folded for word in value.split()):
@@ -205,7 +210,13 @@ def extract(llm, spec: dict, pages: list[str], tables: dict) -> dict | None:
 
 def process(llm, pages: list[str], classes: list[dict], tables: dict) -> tuple[dict, dict] | None:
     """None = model nie odpowiedział; wtedy engine przechodzi na reguły."""
-    spec, answered = classify(llm, pages[0] if pages else "", classes)
+    first = pages[0] if pages else ""
+    # Reguły z YAML rozpoznają klasę bez modelu, gdy są pewne (0 pomyłek na 218 plikach testowych);
+    # model klasyfikuje tylko resztę. Oszczędza jedno zapytanie na dokument.
+    spec = classify_text(first, classes)[0]
+    answered = spec is not None
+    if spec is None:
+        spec, answered = classify(llm, first, classes)
     if not answered:
         return None
     # Wzorce wykluczające z YAML (wyrok, ogłoszenie TED…) obowiązują także po klasyfikacji przez model.

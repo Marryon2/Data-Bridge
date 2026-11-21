@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pymupdf
 
-from app.ocr_fix import fix_text
+from app.ocr_fix import fix_text, layout_text
 
 MIN_LETTERS = 40
 # shortcut: OCR tylko pierwszych 2 stron, podnieś limit gdy skan ma treść głębiej
@@ -61,13 +61,18 @@ def _ocr(doc) -> tuple[list[str] | None, str, dict[str, float]]:
                 )
                 if proc.returncode != 0:
                     return None, "tesseract-error", {}
-                pages.append(base.with_suffix(".txt").read_text(encoding="utf-8", errors="replace"))
                 tsv = base.with_suffix(".tsv")
-                # Bez TSV tekst zostaje, przepada tylko pewność słów (głosowanie nazw działa wtedy na samej liczbie wystąpień).
+                # Bez TSV tekst zostaje, przepada tylko pewność słów i rozdzielanie kolumn.
+                lines: dict[tuple[str, str, str], list[tuple[int, int, int, int, str]]] = {}
                 for row in (tsv.read_text(encoding="utf-8", errors="replace") if tsv.exists() else "").splitlines()[1:]:
                     cells = row.split("\t")
                     if len(cells) == 12 and cells[11].strip() and float(cells[10]) >= 0:
-                        scores.setdefault(_clean(cells[11].strip()), []).append(float(cells[10]))
+                        word = cells[11].strip()
+                        scores.setdefault(_clean(word), []).append(float(cells[10]))
+                        left, top, width, height = (int(cells[i]) for i in (6, 7, 8, 9))
+                        lines.setdefault((cells[2], cells[3], cells[4]), []).append((left, left + width, top, top + height, word))
+                columns = layout_text(list(lines.values()))
+                pages.append(columns if columns is not None else base.with_suffix(".txt").read_text(encoding="utf-8", errors="replace"))
     except OSError:
         return None, "tesseract-error", {}
     for index in range(limit, doc.page_count):

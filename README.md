@@ -9,9 +9,8 @@ Obsługiwane klasy: `odwolanie`, `pelnomocnictwo`, `przelew` (potwierdzenie prze
 - Python 3.13 lub nowszy
 - opcjonalnie [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) z językiem polskim (`pol`), do skanów bez warstwy tekstowej
 - opcjonalnie serwer LLM (domyślnie Ollama z modelem Bielik, patrz [Model](#model))
-- opcjonalnie [docling-serve](https://github.com/docling-project/docling-serve), tylko dla trybu „Docling”
 
-Bez Tesseracta, LLM i docling aplikacja nadal działa w trybie reguł (regex + słowniki).
+Bez Tesseracta i LLM aplikacja nadal działa w trybie reguł (regex + słowniki).
 
 ## Szybki start (Windows)
 
@@ -64,7 +63,6 @@ Otwórz <http://localhost:8000> (port zmienisz w `.env` zmienną `PORT`), wgraj 
 |---|---|
 | **1. Skrypt** | odczyt PyMuPDF + reguły, bez AI |
 | **2. AI** | odczyt PyMuPDF + model z `config/model.yaml` |
-| **3. Docling** | odczyt przez docling-serve (`DOCLING_URL`) + model z `config/model.yaml` |
 
 ## Konfiguracja
 
@@ -75,7 +73,6 @@ Plik `.env` (wzór w `.env.example`):
 | `MISTRAL_API_KEY` | klucz, tylko jeśli używasz Mistral La Plateforme |
 | `DATA_DIR` | katalog z danymi treningowymi (`dane/przyklad_XX/*.json`) dla scorera i części testów |
 | `PORT` | port formularza WWW, domyślnie `8000` |
-| `DOCLING_URL` | adres docling-serve, domyślnie `http://127.0.0.1:5001` |
 
 ### Model
 
@@ -90,13 +87,6 @@ Potem w `config/model.yaml` ustaw `endpoint: http://localhost:11434/api/chat`.
 Mistral La Plateforme: `endpoint: https://api.mistral.ai/v1/chat/completions`, `name: ministral-3b-latest`, `api_key_env: MISTRAL_API_KEY`.
 
 `extraction: llm` oznacza, że klasę i JSON zwraca model, a reguły wchodzą tylko wtedy, gdy serwer nie odpowie. `extraction: rules` oznacza same reguły.
-
-### Docling (opcjonalnie)
-
-```bash
-pip install docling-serve
-docling-serve run --port 5001
-```
 
 ## Docker
 

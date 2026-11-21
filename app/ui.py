@@ -12,8 +12,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from app.config import load_env, load_model
-from app.docling import docling_pages
-from app.engine import process_pages, process_pdf
+from app.engine import process_pdf
 from app.llm import LLMClient
 
 _PAGE = """<!DOCTYPE html>
@@ -72,7 +71,7 @@ h2 { font-size: 1.375rem; margin: 2.5rem 0 1rem; }
 }
 .drop:hover .btn { background: var(--blue-hover); }
 .hint { font-size: .875rem; color: var(--muted); }
-.modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem; }
+.modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; }
 .mode {
   display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; padding: 1rem 1.25rem;
   border: 2px solid var(--blue); border-radius: 3px; background: #fff; color: var(--blue);
@@ -123,8 +122,7 @@ h2 { font-size: 1.375rem; margin: 2.5rem 0 1rem; }
 </label>
 <div class="modes">
 <button type="submit" name="mode" value="rules" class="mode"><span>1. Skrypt</span><small>reguły, odczyt PyMuPDF</small></button>
-<button type="submit" name="mode" value="ai" class="mode"><span>2. AI loczeq</span><small>model Bielik na loczeq.com</small></button>
-<button type="submit" name="mode" value="docling" class="mode"><span>3. Docling</span><small>odczyt docling + model Bielik</small></button>
+<button type="submit" name="mode" value="ai" class="mode"><span>2. AI</span><small>model Bielik (Ollama, config/model.yaml)</small></button>
 </div>
 </form>
 <h2>Wynik</h2>
@@ -159,15 +157,8 @@ def _run(mode: str, path: Path, ai: LLMClient) -> tuple[dict, str]:
     if mode == "rules":
         document, _trace = process_pdf(path, llm=None)
         return document, "skrypt"
-    if mode == "docling":
-        try:
-            pages = docling_pages(path)
-        except Exception as exc:  # serwer docling wyłączony albo błąd konwersji
-            return {"blad": f"docling niedostępny: {exc}"}, "docling – błąd"
-        document, trace = process_pages(pages, llm=ai)
-        return document, "docling + AI" if trace.get("method") == "llm" else "docling + skrypt (AI niedostępne)"
     document, trace = process_pdf(path, llm=ai)
-    return document, "AI loczeq" if trace.get("method") == "llm" else "skrypt (AI niedostępne)"
+    return document, "AI" if trace.get("method") == "llm" else "skrypt (AI niedostępne)"
 
 
 def _files(body: bytes, content_type: str) -> list[tuple[str, bytes]]:
