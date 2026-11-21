@@ -8,6 +8,7 @@ from app.candidates import find_candidates, hint_points as _hint_points, rank_ca
 from app.classify import classify_text
 from app.config import EMPTY_DOCUMENT, load_classes, load_tables
 from app.extract import extract_pdf
+from app.ocr_fix import vote_document
 from app.normalize import apply_normalizer, as_krs, as_person, as_text, guess_case, to_nominative
 
 _NAME_LINE = re.compile(
@@ -685,6 +686,8 @@ def process_pdf(path: str | Path, llm=None) -> tuple[dict, dict]:
     except Exception as exc:  # uszkodzony PDF nie może przerwać wsadu
         return copy.deepcopy(EMPTY_DOCUMENT), {"class": None, "confidence": 0, "fields": [], "error": str(exc)}
     document, trace = process_pages(extracted["pages"], llm=llm)
+    if extracted["ocr"] == "tesseract-pol":
+        document = vote_document(document, "\n".join(extracted["pages"]).split(), extracted["confidence"])
     trace["ocr"] = extracted["ocr"]
     trace["source"] = Path(path).name
     return document, trace

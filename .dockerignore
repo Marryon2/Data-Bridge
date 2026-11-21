@@ -6,3 +6,4 @@ input/
 output/
 trace/
 .pytest_cache/
+.tessdata/

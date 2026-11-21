@@ -22,7 +22,13 @@ copy .env.example .env
 start.bat
 ```
 
-`start.bat` tworzy środowisko `.venv`, instaluje `requirements.txt` i uruchamia przetwarzanie wsadowe (`python -m app`).
+`start.bat` po kolei:
+
+1. Sprawdza Tesseract OCR. Jeśli go nie ma, instaluje go przez `winget` (`UB-Mannheim.TesseractOCR`, potrzebne potwierdzenie administratora). Bez Tesseracta skany PDF bez warstwy tekstowej dają pusty wynik.
+2. Jeśli Tesseract nie ma języka polskiego, pobiera `pol.traineddata` do `.tessdata/` w projekcie.
+3. Tworzy `.venv`, instaluje `requirements.txt` i uruchamia `python -m app`. Argumenty są przekazywane dalej, np. `start.bat --serve` otwiera formularz WWW.
+
+Na nowym komputerze potrzebne są tylko Python 3.13+ i `winget`, który jest w Windows 10 i 11. Gdy instalacja Tesseracta się nie uda, `start.bat` wypisuje ostrzeżenie i uruchamia aplikację bez OCR.
 
 ## Szybki start (Linux / macOS)
 
@@ -30,6 +36,7 @@ start.bat
 git clone https://github.com/Marryon2/Data-Bridge.git
 cd Data-Bridge
 cp .env.example .env
+sudo apt install tesseract-ocr tesseract-ocr-pol   # macOS: brew install tesseract tesseract-lang
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/python -m app
