@@ -45,11 +45,11 @@ python3 -m venv .venv
 
 ### Przetwarzanie wsadowe (CLI)
 
-1. Włóż PDF-y do `input/<nazwa_sprawy>/*.pdf`, np. `input/sprawa_01/odwolanie.pdf`.
+1. Włóż PDF-y do `input/` obok katalogu projektu (`/opt/input/` przy projekcie w `/opt/solution`), np. `input/case1/odwolanie_nr_1.pdf`. Przetwarzany jest każdy PDF z `input/`, na dowolnej głębokości.
 2. Uruchom `python -m app` (albo `start.bat`).
-3. Wyniki trafiają do:
-   - `output/<sprawa>/<nazwa_pliku>.json`: JSON dokumentu,
-   - `trace/<sprawa>/<nazwa_pliku>.json`: ślad (cytat, strona, metoda, pewność każdego pola).
+3. Wyniki trafiają pod tę samą ścieżkę co plik wejściowy:
+   - `output/case1/odwolanie_nr_1.json` (też obok projektu): JSON dokumentu,
+   - `trace/case1/odwolanie_nr_1.json`: ślad (cytat, strona, metoda, pewność każdego pola).
 
 ### Formularz w przeglądarce
 
@@ -57,12 +57,7 @@ python3 -m venv .venv
 .venv\Scripts\python.exe -m app --serve
 ```
 
-Otwórz <http://localhost:8000> (port zmienisz w `.env` zmienną `PORT`), wgraj PDF i wybierz tryb:
-
-| Przycisk | Co robi |
-|---|---|
-| **1. Skrypt** | odczyt PyMuPDF + reguły, bez AI |
-| **2. AI** | odczyt PyMuPDF + model z `config/model.yaml` |
+Otwórz <http://localhost:8000> (port zmienisz w `.env` zmienną `PORT`), wgraj PDF-y i kliknij **Odczytaj (AI)**. Tekst czyta PyMuPDF (skany: Tesseract OCR), dane wyciąga model z `config/model.yaml`. Gdy serwer AI nie odpowiada, wynik pochodzi z reguł, a etykieta mówi „skrypt (AI niedostępne)”.
 
 ## Konfiguracja
 
@@ -90,12 +85,47 @@ Mistral La Plateforme: `endpoint: https://api.mistral.ai/v1/chat/completions`, `
 
 ## Docker
 
-Obraz z Pythonem 3.13 i `tesseract-ocr-pol`. Katalogi `input/`, `output/` i `trace/` są montowane z hosta.
+Obraz z Pythonem 3.13 i `tesseract-ocr-pol`. Montowane z hosta: `../input` i `../output` (obok projektu) oraz `trace/`.
 
 ```bash
-docker compose up --build                                               # CLI
+docker compose build                                                    # raz, przy wdrożeniu
+docker compose run --rm -T odwolania2json                               # CLI: input/ -> output/
 docker compose run --service-ports odwolania2json python -m app --serve  # formularz WWW
 ```
+
+## Wdrożenie na serwer oceny (`/opt`)
+
+Oceniający uruchamiają komendę z `/opt/RUN.md`. Układ na serwerze:
+
+```
+/opt/
+├── RUN.md       ← kopia RUN.md z repozytorium
+├── input/       ← dokumenty od oceniających
+├── output/      ← wyniki
+└── solution/    ← to repozytorium
+```
+
+```bash
+cd /opt/solution               # katalog już istnieje, dlatego git init zamiast git clone
+git init -q
+git remote add origin https://github.com/Marryon2/Data-Bridge.git
+git fetch -q origin main
+git checkout -f -B main origin/main
+sudo cp RUN.md /opt/RUN.md
+sudo mkdir -p /opt/input /opt/output
+sudo cp .env.example .env          # opcjonalnie: klucze API
+sudo docker compose build          # obraz z Pythonem 3.13 i Tesseractem; w czasie oceny nic się nie pobiera
+```
+
+Test dokładnie tak, jak zrobią to oceniający (także po `sudo reboot`):
+
+```bash
+sudo rm -rf /opt/output/* && sudo mkdir -p /opt/input/case1 && sudo cp <przykładowe PDF-y> /opt/input/case1/
+cd /opt/solution && sudo docker compose run --rm -T odwolania2json
+ls -R /opt/output/
+```
+
+Komenda nie korzysta z usługi działającej w tle: kontener startuje z komendą i kończy się po ostatnim pliku.
 
 ## Testy i ocena
 
@@ -112,7 +142,6 @@ Scorer liczy F1 na liściach JSON: stringi porównuje dokładnie, liczby `200` i
 
 - [Architektura](docs/architektura.md)
 - [Konfiguracja klasy dokumentu](docs/konfiguracja-klasy.md)
-- [Dodanie nowej klasy](docs/nowa-klasa.md)
 
 ## Licencja
 

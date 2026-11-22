@@ -3,16 +3,10 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-output/**
-!output/.gitkeep
 trace/**
 !trace/.gitkeep
-input/**
-!input/.gitkeep
 hacknation-2026/
 dane/
-_sample_text.txt
-_transfers.txt
 graphify-out/
 desktop.ini
 .tessdata/

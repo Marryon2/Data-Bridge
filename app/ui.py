@@ -71,7 +71,7 @@ h2 { font-size: 1.375rem; margin: 2.5rem 0 1rem; }
 }
 .drop:hover .btn { background: var(--blue-hover); }
 .hint { font-size: .875rem; color: var(--muted); }
-.modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1rem; }
+.modes { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem; }
 .mode {
   display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; padding: 1rem 1.25rem;
   border: 2px solid var(--blue); border-radius: 3px; background: #fff; color: var(--blue);
@@ -79,7 +79,6 @@ h2 { font-size: 1.375rem; margin: 2.5rem 0 1rem; }
 }
 .mode:hover { background: var(--blue); color: #fff; }
 .mode small { font-weight: 400; font-size: .8125rem; opacity: .85; }
-@media (max-width: 40rem) { .modes { grid-template-columns: 1fr; } }
 
 .output { border: 1px solid var(--line); border-radius: 3px; min-height: 16rem; }
 .output .empty {
@@ -121,8 +120,7 @@ h2 { font-size: 1.375rem; margin: 2.5rem 0 1rem; }
   onchange="document.getElementById('drop-hint').textContent = Array.from(this.files).map(f => f.name).join(', ');">
 </label>
 <div class="modes">
-<button type="submit" name="mode" value="rules" class="mode"><span>1. Skrypt</span><small>reguły, odczyt PyMuPDF</small></button>
-<button type="submit" name="mode" value="ai" class="mode"><span>2. AI</span><small>model Bielik (Ollama, config/model.yaml)</small></button>
+<button type="submit" class="mode"><span>Odczytaj (AI)</span><small>model Bielik (Ollama, config/model.yaml)</small></button>
 </div>
 </form>
 <h2>Wynik</h2>
@@ -138,25 +136,8 @@ h2 { font-size: 1.375rem; margin: 2.5rem 0 1rem; }
 _EMPTY = '<p class="empty">Tu pojawi się plik JSON</p>'
 
 
-def _form(body: bytes, content_type: str) -> tuple[list[tuple[str, bytes]], dict[str, str]]:
-    """Pliki i zwykłe pola (np. mode) z formularza multipart."""
-    files = _files(body, content_type)
-    header = f"Content-Type: {content_type}\r\nMIME-Version: 1.0\r\n\r\n".encode()
-    message = BytesParser(policy=policy.default).parsebytes(header + body)
-    fields = {}
-    if message.is_multipart():
-        for part in message.iter_parts():
-            name = part.get_param("name", header="content-disposition")
-            if name and not part.get_filename():
-                fields[name] = (part.get_payload(decode=True) or b"").decode("utf-8", "replace")
-    return files, fields
-
-
-def _run(mode: str, path: Path, ai: LLMClient) -> tuple[dict, str]:
-    """Jeden plik w wybranym trybie; etykieta mówi, co faktycznie zrobiło JSON (AI może być niedostępne)."""
-    if mode == "rules":
-        document, _trace = process_pdf(path, llm=None)
-        return document, "skrypt"
+def _run(path: Path, ai: LLMClient) -> tuple[dict, str]:
+    """Jeden plik przez AI; etykieta mówi, co faktycznie zrobiło JSON (gdy serwer AI nie odpowie, zapasem są reguły)."""
     document, trace = process_pdf(path, llm=ai)
     return document, "AI" if trace.get("method") == "llm" else "skrypt (AI niedostępne)"
 
@@ -206,15 +187,14 @@ def serve() -> None:
 
         def do_POST(self):
             length = int(self.headers.get("Content-Length", "0"))
-            uploads, fields = _form(self.rfile.read(length), self.headers.get("Content-Type", ""))
-            mode = fields.get("mode", "rules")
+            uploads = _files(self.rfile.read(length), self.headers.get("Content-Type", ""))
             blocks = []
             with TemporaryDirectory() as folder:
                 for name, payload in uploads:
                     path = Path(folder) / name
                     path.write_bytes(payload)
                     started = time.perf_counter()
-                    document, label = _run(mode, path, ai)
+                    document, label = _run(path, ai)
                     blocks.append((f"{name} · {label} · {time.perf_counter() - started:.1f} s", document))
             body = _html(blocks)
             self.send_response(200)

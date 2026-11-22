@@ -1,6 +1,45 @@
 # Konfiguracja ekstrakcji klasy
 
-Jedna klasa to jeden plik `config/classes/<klasa>.yaml`. Silnik nie zawiera nazw `odwolanie`, `pelnomocnictwo` ani `przelew`.
+Jedna klasa to jeden plik `config/classes/<klasa>.yaml`. Silnik nie zawiera nazw `odwolanie`, `pelnomocnictwo` ani `przelew`, więc nowa klasa nie wymaga zmian w kodzie: silnik wczytuje każdy plik z `config/classes/` przy starcie, a klasa pojawia się w klasyfikacji, w zapisie JSON i w prompcie modelu.
+
+## Nowa klasa w 4 krokach
+
+1. Dodaj `config/classes/<nazwa>.yaml`.
+2. Ustal `positive`, `negative`, `threshold` i `schema` z nullami.
+3. Dla każdego liścia podaj `description` (trafia do promptu modelu), a dla trybu reguł także `method`, przy regexie wzorzec i `normalizer`.
+4. Jeśli opis jest słownikiem, dołóż plik w `config/` i wskaż go w `table`.
+
+Przykład minimalny:
+
+```yaml
+name: wezwanie
+description: Wezwanie do uzupełnienia dokumentów
+threshold: 3
+positive:
+  - pattern: 'wezwanie do uzupełnienia'
+    weight: 4
+negative:
+  - pattern: '(?<!\w)orzeka'
+    weight: 100
+veto: 50
+schema:
+  wezwanie:
+    numer: null
+    termin: null
+fields:
+  - path: wezwanie.numer
+    method: regex
+    description: Numer pisma z nagłówka.
+    pattern: '(?i)znak\s*[:.]?\s*(?P<value>[A-Z0-9./-]{4,})'
+    normalizer: text
+  - path: wezwanie.termin
+    method: regex
+    description: Termin uzupełnienia dokumentów (YYYY-MM-DD).
+    pattern: '(?i)w\s+terminie\s+do\s+(?P<value>\d{2}\.\d{2}\.\d{4})'
+    normalizer: date
+```
+
+## Pola pliku klasy
 
 W pliku są:
 
@@ -15,7 +54,6 @@ W pliku są:
   - `first_match` — pierwsza fraza z tabeli, tu `config/czynnosci.yaml`
   - `lookup` — opis czynności wyłącznie z id, nie cytat
   - `flag` — 1/0 albo `null`, gdy lista ma jeden element (`if_single`)
-  - `semantic` — tylko LLM; bez klucza zostaje `null`
 - Opcje pola:
   - `normalizer: entity` — nazwa podmiotu bez adresu („X sp. z o.o., ul. …” → „X sp. z o.o.”), do pól `nazwa`.
   - `join_next` (metoda `line`) — regex; gdy następna linia mu pasuje, jest doklejana („sp. z” / „o.o.”).
@@ -33,7 +71,7 @@ W pliku są:
 
 `OdwolanieKIO.data` i `miejscowosc` mają wzorzec linii nagłówka. Data z zarzutu („w dniu 20 marca 2026”) nie wpada do tych pól. W 15 z 60 przykładów oba są null i tak ma zostać.
 
-Identyfikatory (NIP, REGON, KRS, IBAN, data, kwota, BZP, TED, e-mail) są regexem. Imię, kto jest odwołującym, pierwszy zarzut, pełnomocnik i tytuł zamówienia można przełączyć na `method: semantic`, gdy ukryty zbiór sformułuje je inaczej niż frazy z `czynnosci.yaml`.
+Identyfikatory (NIP, REGON, KRS, IBAN, data, kwota, BZP, TED, e-mail) są regexem. W trybie AI te same pola wypełnia model, a `description` z YAML trafia do jego promptu.
 
 ## Nowy szablon dokumentu
 

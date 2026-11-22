@@ -1,14 +1,15 @@
 services:
   odwolania2json:
     build: .
+    # Nazwany obraz: `docker compose run` bierze go gotowego (zbudowanego przy wdrożeniu), bez pobierania w czasie oceny.
+    image: odwolania2json:latest
     env_file:
-      - .env
-    environment:
-      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
-      DATA_DIR: ${DATA_DIR:-/data/hacknation-2026}
+      - path: .env
+        required: false # klucze API są opcjonalne; brak pliku nie może zatrzymać przetwarzania
     ports:
-      - "8000:8000"
+      - "8000:8000" # tylko dla formularza: docker compose run --service-ports odwolania2json python -m app --serve
     volumes:
-      - ./input:/app/input
-      - ./output:/app/output
+      # /opt/input i /opt/output leżą obok /opt/solution; aplikacja czyta je jako ROOT.parent/input|output.
+      - ../input:/input
+      - ../output:/output
       - ./trace:/app/trace

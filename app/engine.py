@@ -8,6 +8,7 @@ from app.candidates import find_candidates, hint_points as _hint_points, rank_ca
 from app.classify import classify_text
 from app.config import EMPTY_DOCUMENT, load_classes, load_tables
 from app.extract import extract_pdf
+from app.llm_extract import classify as llm_classify, process as process_llm
 from app.ocr_fix import vote_document
 from app.normalize import apply_normalizer, as_krs, as_person, as_text, guess_case, to_nominative
 
@@ -15,7 +16,6 @@ _NAME_LINE = re.compile(
     r"^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:-[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?"
     r"\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+(?:-[A-ZĄĆĘŁŃÓŚŹŻ][a-ząćęłńóśźż]+)?$"
 )
-_ID_TYPES = {"nip", "regon", "krs", "pesel", "iban"}
 
 
 def _get(obj, path: str):
@@ -459,8 +459,6 @@ def _lookup(data: dict, field: dict, tables: dict):
 
 def _eval_scalar(field, text, pages, candidates, scopes, tables, owner):
     method = field.get("method")
-    if method == "semantic":
-        return None, None
     region = _region(field, text, pages, scopes)
     if method == "regex":
         return _regex_field(field, region)
@@ -471,7 +469,7 @@ def _eval_scalar(field, text, pages, candidates, scopes, tables, owner):
     if method == "candidate":
         return _candidate_field(field, candidates)
     if method == "first_match":
-        # shortcut: frazy z config/czynnosci.yaml pokrywają znane sformułowania, ustaw method:semantic gdy parafraza nie łapie id
+        # shortcut: frazy z config/czynnosci.yaml pokrywają znane sformułowania; parafrazę spoza tabeli łapie tryb AI
         # Wygrywa fraza wymieniona najwcześniej w tekście; przy tej samej pozycji kolejność tabeli (węższe frazy wyżej).
         best = None
         for order, row in enumerate(tables[field["table"]]["match"]):
@@ -486,109 +484,10 @@ def _eval_scalar(field, text, pages, candidates, scopes, tables, owner):
     return None, None
 
 
-def _semantic_paths(spec: dict) -> list[dict]:
-    found = []
-    for field in spec.get("fields") or []:
-        if field.get("method") == "semantic":
-            found.append(field)
-    for listing in spec.get("lists") or []:
-        for field in listing.get("fields") or []:
-            if field.get("method") == "semantic":
-                found.append(field)
-    return found
-
-
-def _candidate_values(candidates) -> dict[str, set[str]]:
-    grouped: dict[str, set[str]] = {}
-    for item in candidates:
-        grouped.setdefault(item.kind, set()).add(str(item.value))
-    return grouped
-
-
-def _merge_semantic(data: dict, filled: dict, fields: list[dict], candidates) -> None:
-    known = _candidate_values(candidates)
-    for field in fields:
-        path = field["path"]
-        try:
-            value = _get(filled, path)
-        except (KeyError, TypeError):
-            continue
-        kind = field.get("type")
-        if kind in _ID_TYPES and value is not None and str(value) not in known.get(kind, set()):
-            continue
-        if value is not None:
-            _set(data, path, value)
-
-
-def _llm_classify(llm, text: str, classes: list[dict]):
-    names = ", ".join(spec["name"] for spec in classes)
-    raw = llm.complete_json(
-        "Klasyfikujesz polski dokument zamówień publicznych. Zwróć JSON {\"class\": \"<nazwa>\"} albo {\"class\": \"none\"}.",
-        f"Dozwolone klasy: {names}, none.\n\n{text[:4000]}",
-    )
-    if not raw:
-        return None
-    chosen = str(raw.get("class") or "none")
-    for spec in classes:
-        if spec["name"] == chosen:
-            return spec
-    return None
-
-
-def _fill_semantic(llm, spec, data, pages, candidates, tables):
-    fields = _semantic_paths(spec)
-    if not fields:
-        return
-    if llm is None or not llm.available:
-        return
-    charge = ""
-    if "charge" in (spec.get("scopes") or {}):
-        charge = _scope_text("\n".join(pages), spec["scopes"]["charge"])
-    clip = "\n".join(pages[:3])
-    if charge and charge not in clip:
-        clip += "\n" + charge
-    listed = [
-        {"kind": item.kind, "value": item.value, "context": re.sub(r"\s+", " ", item.context)[:160]}
-        for item in candidates[:40]
-    ]
-    descriptions = [
-        {"path": field["path"], "description": field.get("description", "")} for field in fields
-    ]
-    raw = llm.complete_json(
-        "Uzupełniasz tylko pola semantic polskiego dokumentu. Zwróć JSON o tych ścieżkach. "
-        "Nie wymyślaj NIP, REGON, KRS, PESEL, IBAN, BZP ani TED, jeśli nie ma ich na liście kandydatów. "
-        "Daty w ISO YYYY-MM-DD. Gdy brak danych, null.",
-        json_dumps_prompt(spec["name"], descriptions, data, listed, clip[:12000]),
-    )
-    if not raw:
-        return
-    _merge_semantic(data, raw, fields, candidates)
-    for field in spec.get("fields") or []:
-        if field.get("method") == "lookup":
-            _set(data, field["path"], _lookup(data, field, tables))
-
-
-def json_dumps_prompt(class_name, descriptions, data, listed, clip) -> str:
-    import json
-
-    return json.dumps(
-        {
-            "class": class_name,
-            "fields": descriptions,
-            "current": data,
-            "candidates": listed,
-            "clip": clip,
-        },
-        ensure_ascii=False,
-    )
-
-
 def process_pages(pages: list[str], llm=None, classes=None, tables=None) -> tuple[dict, dict]:
     classes = list(classes or load_classes())
     tables = tables or load_tables()
     if llm is not None and llm.available and llm.model.get("extraction") == "llm":
-        from app.llm_extract import process as process_llm
-
         result = process_llm(llm, pages, classes, tables)
         if result is not None:
             return result
@@ -598,7 +497,7 @@ def process_pages(pages: list[str], llm=None, classes=None, tables=None) -> tupl
     spec, score, grey = classify_text(first, classes)
     trace = {"class": None, "confidence": score, "fields": [], "ocr": None, "method": "rules"}
     if spec is None and grey and llm is not None and llm.available:
-        spec = _llm_classify(llm, first, classes)
+        spec = llm_classify(llm, first, classes)[0]
     if spec is None:
         return copy.deepcopy(EMPTY_DOCUMENT), trace
     trace["class"] = spec["name"]
@@ -607,7 +506,7 @@ def process_pages(pages: list[str], llm=None, classes=None, tables=None) -> tupl
     candidates = find_candidates(text)
     scopes = spec.get("scopes") or {}
     for field in spec.get("fields") or []:
-        if field.get("method") in {"lookup", "semantic"}:
+        if field.get("method") == "lookup":
             continue
         value, quote = _eval_scalar(field, text, pages, candidates, scopes, tables, data)
         if value is not None:
@@ -643,7 +542,7 @@ def process_pages(pages: list[str], llm=None, classes=None, tables=None) -> tupl
             item = copy.deepcopy(template)
             local = find_candidates(chunk)
             for field in listing.get("fields") or []:
-                if field.get("method") in {"flag", "semantic"}:
+                if field.get("method") == "flag":
                     continue
                 # only_if_empty: zapasowa reguła dla tej samej ścieżki, np. kancelaria z nagłówka pisma.
                 if field.get("only_if_empty") and _get(item, field["path"]) is not None:
@@ -676,7 +575,6 @@ def process_pages(pages: list[str], llm=None, classes=None, tables=None) -> tupl
             _set(data, field["path"], value)
             if value is not None:
                 trace["fields"].append(_trace(field["path"], value, None, "lookup", pages))
-    _fill_semantic(llm, spec, data, pages, candidates, tables)
     return data, trace
 
 

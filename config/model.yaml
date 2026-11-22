@@ -3,11 +3,16 @@
 # Dla Mistral La Plateforme: endpoint https://api.mistral.ai/v1/chat/completions, name ministral-3b-latest,
 # api_key_env MISTRAL_API_KEY.
 name: SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M
-endpoint: http://34.12.21.105:11434/api/chat
+endpoint: http://34.12.224.222:11434/api/chat
 api_key_env: ""
-num_ctx: 16384
+# 12288: najdłuższy prompt (tekst przycięty do 14 000 znaków + wzór) to ~7800 tokenów + odpowiedź, a model wciąż
+# mieści się w całości w GPU hosta (6,6 GB). Przy 16384 część szła na CPU i generowanie było ~25% wolniejsze.
+num_ctx: 12288
 timeout_s: 300
 temperature: 0
 json_mode: true
 # llm: klasa i JSON z modelu (reguły tylko, gdy serwer nie odpowie). rules: same reguły.
 extraction: llm
+# Pliki przetwarzane naraz w CLI. Ollama z OLLAMA_NUM_PARALLEL=1 i tak obsługuje AI po kolei – 2 nakładają tylko OCR
+# na czekanie; API z równoległością (np. Mistral) skorzysta z większej liczby.
+workers: 2

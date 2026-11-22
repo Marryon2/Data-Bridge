@@ -4,6 +4,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import threading
 from pathlib import Path
 
 import pymupdf
@@ -15,6 +16,8 @@ MIN_LETTERS = 40
 OCR_PAGES = 2
 _PAGE_MARK = re.compile(r"(?m)^Strona\s+\d+\s+z\s+\d+\s*$")
 _warned = False
+# PyMuPDF nie jest bezpieczny wątkowo: czytanie PDF pod blokadą; Tesseract (osobny proces) i AI idą równolegle.
+_PDF_LOCK = threading.Lock()
 
 
 def _letters(text: str) -> int:
@@ -39,19 +42,18 @@ def _tesseract_note() -> str:
     return "tesseract-missing"
 
 
-def _ocr(doc) -> tuple[list[str] | None, str, dict[str, float]]:
-    """Strony z OCR, nota i średnia pewność Tesseracta (0–100) dla każdego odczytanego słowa."""
+def _ocr(images: list[bytes], rest: list[str]) -> tuple[list[str] | None, str, dict[str, float]]:
+    """OCR obrazów PNG pierwszych stron (+ tekst pozostałych stron): strony, nota i średnia pewność Tesseracta (0–100) słów."""
     exe = shutil.which("tesseract")
     if not exe:
         return None, _tesseract_note(), {}
     pages: list[str] = []
     scores: dict[str, list[float]] = {}
-    limit = min(OCR_PAGES, doc.page_count)
     try:
         with tempfile.TemporaryDirectory() as work:
-            for index in range(limit):
+            for index, png in enumerate(images):
                 image, base = Path(work, f"{index}.png"), Path(work, str(index))
-                doc[index].get_pixmap(dpi=200).save(image)
+                image.write_bytes(png)
                 # Jeden przebieg, dwa wyniki: tekst jak dotąd i TSV z pewnością słów. Parametry -c zamiast
                 # plików konfiguracyjnych „txt”/„tsv”, których nie ma w .tessdata/ pobranym przez start.bat.
                 proc = subprocess.run(
@@ -75,20 +77,26 @@ def _ocr(doc) -> tuple[list[str] | None, str, dict[str, float]]:
                 pages.append(columns if columns is not None else base.with_suffix(".txt").read_text(encoding="utf-8", errors="replace"))
     except OSError:
         return None, "tesseract-error", {}
-    for index in range(limit, doc.page_count):
-        pages.append(doc[index].get_text("text") or "")
-    return pages, "tesseract-pol", {word: sum(v) / len(v) for word, v in scores.items()}
+    return pages + rest, "tesseract-pol", {word: sum(v) / len(v) for word, v in scores.items()}
 
 
 def extract_pdf(path: str | Path) -> dict:
-    doc = pymupdf.open(path)
-    try:
-        pages = [_clean(page.get_text("text") or "") for page in doc]
-        ocr, confidence = None, {}
-        if _letters("\n".join(pages)) < MIN_LETTERS:
-            ocr_pages, ocr, confidence = _ocr(doc)
-            if ocr_pages:
-                pages = [fix_text(_clean(page)) for page in ocr_pages]
-        return {"pages": pages, "ocr": ocr, "confidence": confidence}
-    finally:
-        doc.close()
+    images: list[bytes] = []
+    rest: list[str] = []
+    with _PDF_LOCK:
+        doc = pymupdf.open(path)
+        try:
+            pages = [_clean(page.get_text("text") or "") for page in doc]
+            scanned = _letters("\n".join(pages)) < MIN_LETTERS
+            if scanned:
+                limit = min(OCR_PAGES, doc.page_count)
+                images = [doc[index].get_pixmap(dpi=200).tobytes("png") for index in range(limit)]
+                rest = [doc[index].get_text("text") or "" for index in range(limit, doc.page_count)]
+        finally:
+            doc.close()
+    ocr, confidence = None, {}
+    if scanned:
+        ocr_pages, ocr, confidence = _ocr(images, rest)
+        if ocr_pages:
+            pages = [fix_text(_clean(page)) for page in ocr_pages]
+    return {"pages": pages, "ocr": ocr, "confidence": confidence}

@@ -173,7 +173,7 @@ def classify(llm, first_page: str, classes: list[dict]):
 
 
 def extract(llm, spec: dict, pages: list[str], tables: dict) -> dict | None:
-    from app.engine import _lookup, _set  # leniwy import: engine importuje ten moduł w trybie AI
+    from app.engine import _get, _lookup, _set  # leniwy import: engine importuje ten moduł
 
     desc = _descriptions(spec)
     template = _template(spec["schema"], "", desc)
@@ -196,7 +196,6 @@ def extract(llm, spec: dict, pages: list[str], tables: dict) -> dict | None:
     enums = spec.get("llm_enum") or {}
     data = _clean(_conform(spec["schema"], raw), "", flat, flat.translate(_FOLD).lower(), _compact(text), templates, enums)
     # llm_max_items: np. Odwołujący = tylko lider konsorcjum (pierwszy element).
-    from app.engine import _get, _set
     for path, limit in (spec.get("llm_max_items") or {}).items():
         items = _get(data, path)
         if isinstance(items, list):
@@ -211,11 +210,11 @@ def extract(llm, spec: dict, pages: list[str], tables: dict) -> dict | None:
 def process(llm, pages: list[str], classes: list[dict], tables: dict) -> tuple[dict, dict] | None:
     """None = model nie odpowiedział; wtedy engine przechodzi na reguły."""
     first = pages[0] if pages else ""
-    # Reguły z YAML rozpoznają klasę bez modelu, gdy są pewne (0 pomyłek na 218 plikach testowych);
-    # model klasyfikuje tylko resztę. Oszczędza jedno zapytanie na dokument.
-    spec = classify_text(first, classes)[0]
-    answered = spec is not None
-    if spec is None:
+    # Reguły z YAML decydują, gdy są pewne – także „żadna klasa” (dane treningowe UZP: 210/210 dokumentów i 4/4
+    # negatywy dobrze). Model pyta się tylko w szarej strefie: sam uznawał np. szkolenie o odwołaniach za odwołanie.
+    spec, _, grey = classify_text(first, classes)
+    answered = True
+    if spec is None and grey:
         spec, answered = classify(llm, first, classes)
     if not answered:
         return None
