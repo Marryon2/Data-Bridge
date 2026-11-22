@@ -3,17 +3,19 @@
 from __future__ import annotations
 
 import json
+import threading
 import time
 from email import policy
 from email.parser import BytesParser
 from html import escape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from tempfile import TemporaryDirectory
 
-from app.config import load_env, load_model
-from app.engine import process_pdf
+from app.config import ROOT, load_env, load_model
+from app.engine import process_input
 from app.llm import LLMClient
+
+INPUT, OUTPUT = ROOT.parent / "input", ROOT.parent / "output"
 
 _PAGE = """<!DOCTYPE html>
 <html lang="pl">
@@ -21,125 +23,181 @@ _PAGE = """<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Odwołania2json</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap">
 <style>
-/* Paleta i typografia w stylu serwisów administracji: bez godła i logotypów gov.pl. */
-:root {
-  --blue: #0052a5; --blue-hover: #006cd7; --red: #d5233f; --text: #1b1b1b;
-  --muted: #767676; --line: #b7b7b7; --bg-soft: #f1f1f1; --focus: #ffc605;
-}
+/* Wartości przepisane z arkuszy gov.pl (main.css, govpl_template.css), bez godła, logotypów i nazwy serwisu. */
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body {
-  font-family: "Open Sans", "Segoe UI", Arial, sans-serif; color: var(--text);
-  line-height: 1.5; background: #fff; display: flex; flex-direction: column; min-height: 100vh;
+  font-family: "Open Sans", sans-serif; font-size: 1rem; line-height: 1.5; color: #1b1b1b; background: #fff;
+  -webkit-font-smoothing: antialiased; display: flex; flex-direction: column; min-height: 100vh;
 }
-a { color: var(--blue); }
-:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
-.wrap { max-width: 60rem; margin: 0 auto; padding: 0 1.5rem; width: 100%; }
+a { color: #0052a5; text-decoration: none; }
+a:hover { color: #006cd7; text-decoration: underline; }
+:focus-visible { outline: none; box-shadow: 0 0 0 2px #0452a8, 0 0 0 4px #fff, 0 0 0 6px #0452a8; }
+h1, h2, h3 { font-weight: bold; line-height: 1.3; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-.top { border-top: 4px solid var(--red); border-bottom: 1px solid var(--line); }
-.top .wrap { display: flex; align-items: center; justify-content: space-between; min-height: 4.5rem; }
-.brand { display: flex; flex-direction: column; text-decoration: none; color: var(--text); }
-.brand strong { font-size: 1.25rem; letter-spacing: .01em; }
-.brand span { font-size: .8125rem; color: var(--muted); }
-.refresh {
-  display: inline-flex; align-items: center; gap: .5rem; padding: .5rem 1rem;
-  border: 1px solid var(--blue); border-radius: 3px; color: var(--blue);
-  font-weight: 600; font-size: .875rem; text-decoration: none; background: #fff;
+/* Jedna wyśrodkowana kolumna (szerokość kolumny treści gov.pl: 66% z 73em) dla okruszków, treści i stopki.
+   width jest potrzebne, bo body to flex-kolumna: bez niego kontenery kurczą się do treści i rozjeżdżają. */
+.main-container { display: block; width: calc(100% - 2.2em); max-width: 48em; margin: 14px auto 28px; }
+
+.govpl { display: flex; align-items: center; background: #fff; border-bottom: .125rem solid #f1f1f1; }
+.govpl__header { flex: 1; display: flex; align-items: center; }
+.govpl__logotype {
+  color: #1b1b1b; text-decoration: none; font-size: 1.18125rem; font-weight: bold;
+  margin: .875rem 1rem .625rem .5rem; padding-top: .25rem;
 }
-.refresh:hover { background: var(--blue); color: #fff; }
-.refresh .icon { font-size: 1.125rem; line-height: 1; }
-
-.crumbs { font-size: .8125rem; color: var(--muted); padding: 1rem 0 0; }
-.crumbs a { color: var(--muted); }
-main { flex: 1; padding-bottom: 3rem; }
-h1 { font-size: 2rem; line-height: 1.25; margin: 1.5rem 0 .5rem; }
-.lead { font-size: 1.0625rem; margin: 0 0 2rem; max-width: 44rem; }
-h2 { font-size: 1.375rem; margin: 2.5rem 0 1rem; }
-
-.drop {
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .75rem;
-  min-height: 11rem; padding: 2rem; text-align: center; cursor: pointer;
-  background: var(--bg-soft); border: 2px dashed var(--line); border-radius: 3px;
+.govpl__logotype:hover { color: #1b1b1b; text-decoration: underline; }
+.govpl__portal-name { display: none; align-items: center; font-size: .875rem; align-self: stretch; }
+.govpl__portal-name::before { content: ""; flex: 0 0 2px; height: 63%; background: #d5233f; margin-right: 1.8125rem; }
+@media (min-width: 43.75rem) {
+  .govpl__logotype { font-size: 1.71875rem; margin: .8125rem 1.8125rem .8125rem 2rem; padding-top: .5rem; }
+  .govpl__portal-name { display: flex; }
 }
-.drop:hover { border-color: var(--blue); }
-.drop:focus-within { outline: 3px solid var(--focus); outline-offset: 2px; border-color: var(--blue); }
-.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.govpl__panel-login { margin: .625rem .75rem; align-self: center; padding-left: .9em; padding-right: .9em; text-transform: none; font-weight: 600; }
+
+.breadcrumbs ul { display: flex; flex-wrap: wrap; list-style: none; margin: 0; padding: 0; font-size: .875em; }
+.breadcrumbs li + li::before { content: "\\203A"; color: #0052a5; margin: 0 .5em; font-weight: bold; }
+.breadcrumbs li:last-child { color: #1b1b1b; }
+
+main { flex: 1; }
+.service-card > h1 { font-size: 2em; margin: .5em 0 .75em; }
+.service-card h2 { font-size: 1.5em; margin: 1.5em 0 .5em; }
+.service-card p { margin: 1.5em 0; }
+
 .btn {
-  display: inline-block; padding: .75rem 1.75rem; border-radius: 3px;
-  background: var(--blue); color: #fff; font-weight: 600; font-size: 1rem;
+  display: inline-block; font: bold 1rem/1.5 "Open Sans", sans-serif; color: #fff; text-align: center; vertical-align: middle;
+  user-select: none; background: #0052a5; border: .125rem solid #0052a5; border-radius: .25rem;
+  padding: .4375rem 1.75rem; text-transform: uppercase; text-decoration: none; cursor: pointer;
 }
-.drop:hover .btn { background: var(--blue-hover); }
-.hint { font-size: .875rem; color: var(--muted); }
-.modes { display: grid; grid-template-columns: 1fr; gap: 1rem; margin-top: 1rem; }
-.mode {
-  display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; padding: 1rem 1.25rem;
-  border: 2px solid var(--blue); border-radius: 3px; background: #fff; color: var(--blue);
-  font-family: inherit; font-size: 1rem; font-weight: 600; line-height: 1.3; text-align: left; cursor: pointer;
-}
-.mode:hover { background: var(--blue); color: #fff; }
-.mode small { font-weight: 400; font-size: .8125rem; opacity: .85; }
+.btn:hover { color: #fff; text-decoration: none; background: #006cd7; border-color: #006cd7; }
+.btn:disabled { background: #656565; border-color: #656565; cursor: progress; }
+.btn.btn-secondary { color: #0052a5; border-color: #0052a5; background: #fff; }
+.btn.btn-secondary:hover { color: #006cd7; border-color: #006cd7; background: #fff; }
+.service-card .btn { width: 100%; }
+.upload { position: relative; display: block; }
+.upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.upload:focus-within .btn { box-shadow: 0 0 0 2px #0452a8, 0 0 0 4px #fff, 0 0 0 6px #0452a8; }
+.status { font-size: .875em; color: #656565; margin: .75em 0 1.5em; }
+.start { margin: 0; }
 
-.output { border: 1px solid var(--line); border-radius: 3px; min-height: 16rem; }
-.output .empty {
-  display: flex; align-items: center; justify-content: center; min-height: 16rem;
-  margin: 0; color: var(--muted);
+.warn { margin: 1.5em 0; padding: 1em 1.25em; border-left: .25rem solid #d5233f; background: #f1f1f1; }
+
+.accordion { list-style: none; padding: 0; margin: 1.56256em 0 0; }
+.accordion > li { border-top: 1px solid #f1f1f1; padding: .93756em 0; }
+.accordion > li:last-child { border-bottom: 1px solid #f1f1f1; }
+.accordion summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; font-size: 1.25em; font-weight: 700;
+  line-height: 1.875em; padding: .93756em .12506em; color: #0052a5;
 }
-.result + .result { border-top: 1px solid var(--line); }
-.result h3 {
-  margin: 0; padding: .75rem 1.25rem; font-size: 1rem; background: var(--bg-soft);
-  border-left: 4px solid var(--blue);
-}
-.result pre {
-  margin: 0; padding: 1.25rem; overflow: auto; white-space: pre-wrap; word-break: break-word;
+.accordion summary::-webkit-details-marker { display: none; }
+.accordion summary:hover { color: #006cd7; }
+.accordion summary::after { content: "\\2304"; margin-left: auto; font-size: 1.3rem; }
+.accordion details[open] summary { color: #1b1b1b; }
+.accordion details[open] summary::after { content: "\\2303"; }
+.accordion pre {
+  margin: 0 0 1em; padding: 1em; background: #f1f1f1; overflow: auto; white-space: pre-wrap; word-break: break-word;
   font: .875rem/1.6 Consolas, "Courier New", monospace;
 }
+.empty { color: #656565; margin: 1.5em 0; }
 
-.foot { background: var(--bg-soft); border-top: 1px solid var(--line); font-size: .8125rem; color: var(--muted); }
-.foot .wrap { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+.footer { border-top: solid #d5233f .1875rem; font-size: .875em; }
+.footer .main-container { padding-top: 1.6em; padding-bottom: 2.50006em; }
+
+/* Ułatwienia dostępu: skala to font-size na <html> (cała strona jest w rem/em), kontrast to klasa na <html>.
+   Kontrast wg gov.pl/web/dostepnosc-cyfrowa/kontrast-kolorow (WCAG AA): tekst >= 4,5:1, duży tekst i ramki/przyciski >= 3:1.
+   Najsłabsze pary w trybie zwykłym: #006cd7/#fff 5,09:1, #767676/#fff 4,54:1 (ramki A/Kontrast); tryb kontrastu >= 19,5:1. */
+.govpl { flex-wrap: wrap; }
+.a11y { display: flex; gap: .25rem; align-items: center; margin: .625rem 0 .625rem .75rem; }
+.a11y button {
+  font: bold .875rem/1 "Open Sans", sans-serif; color: #0052a5; background: #fff; cursor: pointer;
+  border: .0625rem solid #767676; border-radius: .25rem; padding: .4375rem .625rem; min-width: 2.75rem; min-height: 2.75rem;
+}
+.a11y button:hover { border-color: #006cd7; color: #006cd7; }
+.a11y button[aria-pressed="true"] { background: #0052a5; border-color: #0052a5; color: #fff; }
+
+html.contrast body, html.contrast .govpl, html.contrast .a11y button, html.contrast .btn.btn-secondary { background: #000; color: #fff; }
+html.contrast a, html.contrast a:hover, html.contrast .accordion summary, html.contrast .accordion summary:hover,
+html.contrast .breadcrumbs li + li::before, html.contrast .a11y button, html.contrast .btn.btn-secondary { color: #ff0; }
+html.contrast .accordion details[open] summary, html.contrast .breadcrumbs li:last-child, html.contrast .govpl__logotype,
+html.contrast .status, html.contrast .empty { color: #fff; }
+html.contrast .btn, html.contrast .a11y button[aria-pressed="true"] { background: #ff0; border-color: #ff0; color: #000; }
+html.contrast .btn.btn-secondary, html.contrast .a11y button { border-color: #ff0; }
+html.contrast .btn:hover { background: #000; color: #ff0; }
+html.contrast .btn:disabled { background: #fff; border-color: #fff; color: #000; }
+html.contrast .warn, html.contrast .accordion pre { background: #000; color: #fff; border: .0625rem solid #fff; }
+html.contrast .warn { border-left: .25rem solid #ff0; }
+html.contrast .govpl, html.contrast .accordion > li { border-color: #fff; }
+html.contrast .govpl__portal-name::before { background-color: #ff0; }
+html.contrast .footer { background: #000; border-top-color: #ff0; }
+html.contrast :focus-visible { box-shadow: 0 0 0 2px #000, 0 0 0 5px #ff0; }
 </style>
+<script>
+(function () {  /* przed rysowaniem strony: bez mignięcia domyślnego wyglądu */
+  var d = document.documentElement;
+  if (localStorage.getItem("contrast") === "1") d.classList.add("contrast");
+  d.style.fontSize = (localStorage.getItem("scale") || "100") + "%";
+})();
+function a11yMark() {
+  var d = document.documentElement, scale = localStorage.getItem("scale") || "100";
+  document.querySelectorAll("[data-scale]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.scale === scale); });
+  document.getElementById("contrast").setAttribute("aria-pressed", d.classList.contains("contrast"));
+}
+function setScale(value) {
+  document.documentElement.style.fontSize = value + "%"; localStorage.setItem("scale", value); a11yMark();
+}
+function toggleContrast() {
+  localStorage.setItem("contrast", document.documentElement.classList.toggle("contrast") ? "1" : "0"); a11yMark();
+}
+</script>
 </head>
 <body>
-<header class="top">
-<div class="wrap">
-<a class="brand" href="/"><strong>Odwołania2json</strong><span>Ekstrakcja danych z odwołań do KIO</span></a>
-<a class="refresh" href="/" title="Odśwież stronę"><span class="icon" aria-hidden="true">&#8635;</span>Odśwież stronę</a>
+<header class="govpl">
+<div class="govpl__header">
+<a class="govpl__logotype" href="/">Odwołania2json</a>
+<span class="govpl__portal-name">Ekstrakcja danych z odwołań do KIO</span>
 </div>
+<div class="a11y" role="group" aria-label="Ułatwienia dostępu">
+<button type="button" data-scale="100" onclick="setScale('100')" aria-label="Normalny rozmiar tekstu">A</button>
+<button type="button" data-scale="125" onclick="setScale('125')" aria-label="Większy tekst">A+</button>
+<button type="button" data-scale="150" onclick="setScale('150')" aria-label="Największy tekst">A++</button>
+<button type="button" id="contrast" onclick="toggleContrast()" aria-label="Wysoki kontrast">Kontrast</button>
+</div>
+<a class="govpl__panel-login btn btn-secondary" href="/">Odśwież stronę</a>
 </header>
-<main>
-<div class="wrap">
-<nav class="crumbs" aria-label="Ścieżka"><a href="/">Strona główna</a> &rsaquo; Ekstrakcja danych</nav>
+<nav class="breadcrumbs main-container" aria-label="Ścieżka okruszków">
+<ul><li><a href="/">Strona główna</a></li><li>Ekstrakcja danych</li></ul>
+</nav>
+<main class="main-container" id="main-content">
+<div class="service-card">
 <h1>Przekształć dokumenty PDF w dane JSON</h1>
-<p class="lead">Wgraj odwołanie, pełnomocnictwo albo potwierdzenie przelewu, a potem wybierz sposób przetwarzania. Wynik ma ten sam format JSON w każdym trybie, więc tryby można porównywać.</p>
-<form method="post" enctype="multipart/form-data"
-  onsubmit="if (event.submitter) event.submitter.querySelector('span').textContent = 'Przetwarzanie…';">
-<label class="drop">
-<span class="btn">Wybierz plik</span>
-<span class="hint" id="drop-hint">Pliki PDF, można wybrać kilka naraz</span>
-<input type="file" name="pdf" accept="application/pdf" multiple required
-  onchange="document.getElementById('drop-hint').textContent = Array.from(this.files).map(f => f.name).join(', ');">
+<p>Wgraj pliki PDF do folderu <code>input</code>, a potem kliknij <strong>Start</strong>. Gdy wszystkie pliki JSON zostaną zapisane w folderze <code>output</code>, pojawią się poniżej, a przetworzone pliki zostaną usunięte z folderu <code>input</code>.</p>
+<form method="post" action="/upload" enctype="multipart/form-data">
+<label class="upload">
+<span class="btn btn-secondary">Wgraj pliki do input</span>
+<input type="file" name="pdf" accept="application/pdf,.pdf" multiple required onchange="this.form.submit()">
 </label>
-<div class="modes">
-<button type="submit" class="mode"><span>Odczytaj (AI)</span><small>model Bielik (Ollama, config/model.yaml)</small></button>
-</div>
+<noscript><button type="submit" class="btn">Wyślij</button></noscript>
 </form>
-<h2>Wynik</h2>
-<section class="output" aria-live="polite">
+<p class="status" aria-live="polite"><!--WAITING--></p>
+<form class="start" method="post" action="/start" onsubmit="var b = this.querySelector('button'); b.disabled = true; b.textContent = 'Przetwarzanie…';">
+<button type="submit" class="btn">Start</button>
+</form>
+<div class="warn" role="note"><strong>Uwaga:</strong> jeżeli program nie będzie w stanie połączyć się z AI, użyje skryptów lokalnych, a precyzja wyników może być niższa.</div>
+<h2>Output</h2>
+<section aria-live="polite">
 <!--RESULTS-->
 </section>
 </div>
 </main>
-<footer class="foot"><div class="wrap">Odwołania2json · HackNation 2026 · przetwarzanie lokalne, pliki nie są zapisywane</div></footer>
+<footer class="footer"><div class="main-container">Odwołania2json · HackNation 2026 · przetwarzanie lokalne, pliki trafiają do folderów input i output</div></footer>
+<script>a11yMark();</script>
 </body>
 </html>
 """
-_EMPTY = '<p class="empty">Tu pojawi się plik JSON</p>'
-
-
-def _run(path: Path, ai: LLMClient) -> tuple[dict, str]:
-    """Jeden plik przez AI; etykieta mówi, co faktycznie zrobiło JSON (gdy serwer AI nie odpowie, zapasem są reguły)."""
-    document, trace = process_pdf(path, llm=ai)
-    return document, "AI" if trace.get("method") == "llm" else "skrypt (AI niedostępne)"
+_EMPTY = '<p class="empty">Tu pojawią się gotowe pliki JSON</p>'
 
 
 def _files(body: bytes, content_type: str) -> list[tuple[str, bytes]]:
@@ -156,15 +214,22 @@ def _files(body: bytes, content_type: str) -> list[tuple[str, bytes]]:
     return found
 
 
-def _html(blocks: list[tuple[str, dict]]) -> bytes:
+def _waiting() -> list[str]:
+    return sorted(p.relative_to(INPUT).as_posix() for p in INPUT.rglob("*") if p.is_file() and p.suffix.lower() == ".pdf")
+
+
+def _html(blocks: list[tuple[str, dict]], note: str = "") -> bytes:
     parts = []
     for name, document in blocks:
         rendered = json.dumps(document, ensure_ascii=False, indent=2)
-        parts.append(f'<article class="result"><h3>{escape(name)}</h3><pre>{escape(rendered)}</pre></article>')
-    page = _PAGE.replace("<!--RESULTS-->", "\n".join(parts) or _EMPTY)
-    if blocks:
-        # Zamienia wpis POST w historii na GET: odświeżenie pokazuje pusty formularz zamiast ponownego wysłania pliku.
-        page = page.replace("</body>", "<script>history.replaceState(null, '', location.href);</script>\n</body>")
+        parts.append(f'<li><details><summary>{escape(name)}</summary><pre>{escape(rendered)}</pre></details></li>')
+    waiting = _waiting()
+    status = note or (f"W folderze input ({len(waiting)}): " + ", ".join(waiting) if waiting else "Folder input jest pusty.")
+    results = '<ul class="accordion">' + "\n".join(parts) + "</ul>" if parts else _EMPTY
+    page = _PAGE.replace("<!--RESULTS-->", results).replace("<!--WAITING-->", escape(status))
+    if blocks or note:
+        # Zamienia wpis POST w historii na GET: odświeżenie nie uruchamia przetwarzania ponownie.
+        page = page.replace("</body>", "<script>history.replaceState(null, '', '/');</script>\n</body>")
     return page.encode("utf-8")
 
 
@@ -175,10 +240,13 @@ def serve() -> None:
     port = int(os.environ.get("PORT", "8000"))
     # Przyciski AI zawsze w trybie llm, niezależnie od `extraction` w config/model.yaml.
     ai = LLMClient({**load_model(), "extraction": "llm"})
+    busy = threading.Lock()  # jedno przetwarzanie naraz: drugi Start nie może brać tych samych plików
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
-            body = _html([])
+            self._send(_html([]))
+
+        def _send(self, body: bytes):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
@@ -187,21 +255,28 @@ def serve() -> None:
 
         def do_POST(self):
             length = int(self.headers.get("Content-Length", "0"))
-            uploads = _files(self.rfile.read(length), self.headers.get("Content-Type", ""))
-            blocks = []
-            with TemporaryDirectory() as folder:
-                for name, payload in uploads:
-                    path = Path(folder) / name
-                    path.write_bytes(payload)
-                    started = time.perf_counter()
-                    document, label = _run(path, ai)
-                    blocks.append((f"{name} · {label} · {time.perf_counter() - started:.1f} s", document))
-            body = _html(blocks)
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            body = self.rfile.read(length)
+            if self.path == "/upload":
+                INPUT.mkdir(parents=True, exist_ok=True)
+                for name, payload in _files(body, self.headers.get("Content-Type", "")):
+                    if name.lower().endswith(".pdf"):  # _files zostawia samą nazwę pliku: bez ścieżek spoza input/
+                        (INPUT / name).write_bytes(payload)
+                self.send_response(303)  # po wgraniu wraca na stronę z listą plików w input/
+                self.send_header("Location", "/")
+                self.end_headers()
+                return
+            if busy.locked():
+                self._send(_html([], "Przetwarzanie już trwa. Poczekaj na wynik."))
+                return
+            with busy:
+                started = time.perf_counter()
+                results = process_input(ai)
+                # Dopiero gdy zapisane są WSZYSTKIE JSON-y: usuń przetworzone PDF-y z input/.
+                for pdf, _, _ in results:
+                    pdf.unlink(missing_ok=True)
+            blocks = [(json_path.relative_to(OUTPUT).as_posix(), document) for _, json_path, document in results]
+            note = f"Gotowe: {len(results)} plików w {time.perf_counter() - started:.1f} s." if results else "Brak plików PDF w folderze input."
+            self._send(_html(blocks, note))
 
         def log_message(self, fmt, *args):
             print(f"[ui] {self.address_string()} {fmt % args}")

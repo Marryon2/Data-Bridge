@@ -57,7 +57,7 @@ python3 -m venv .venv
 .venv\Scripts\python.exe -m app --serve
 ```
 
-Otwórz <http://localhost:8000> (port zmienisz w `.env` zmienną `PORT`), wgraj PDF-y i kliknij **Odczytaj (AI)**. Tekst czyta PyMuPDF (skany: Tesseract OCR), dane wyciąga model z `config/model.yaml`. Gdy serwer AI nie odpowiada, wynik pochodzi z reguł, a etykieta mówi „skrypt (AI niedostępne)”.
+Otwórz <http://localhost:8000> (port zmienisz w `.env` zmienną `PORT`). **Wgraj pliki do input** zapisuje PDF-y w `input/`, **Start** przetwarza wszystko z `input/`, a gdy wszystkie JSON-y są już w `output/`, pokazuje je w polu Output i usuwa przetworzone PDF-y z `input/`. Tekst czyta PyMuPDF (skany: Tesseract OCR), dane wyciąga model z `config/model.yaml`. Gdy serwer AI nie odpowiada, wynik pochodzi z reguł, a etykieta mówi „skrypt (AI niedostępne)”.
 
 ## Konfiguracja
 

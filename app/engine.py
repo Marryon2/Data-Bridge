@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import copy
+import json
 import re
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from app.candidates import find_candidates, hint_points as _hint_points, rank_candidates
 from app.classify import classify_text
-from app.config import EMPTY_DOCUMENT, load_classes, load_tables
+from app.config import EMPTY_DOCUMENT, ROOT, load_classes, load_model, load_tables
 from app.extract import extract_pdf
 from app.llm_extract import classify as llm_classify, process as process_llm
 from app.ocr_fix import vote_document
@@ -589,3 +591,28 @@ def process_pdf(path: str | Path, llm=None) -> tuple[dict, dict]:
     trace["ocr"] = extracted["ocr"]
     trace["source"] = Path(path).name
     return document, trace
+
+
+def process_input(llm=None) -> list[tuple[Path, Path, dict]]:
+    """Każdy PDF z input/ (dowolna głębokość) -> JSON w output/ pod tą samą ścieżką, ślad w trace/.
+
+    input/ i output/ leżą obok projektu (/opt/input, /opt/solution); w kontenerze ROOT=/app, więc /input i /output.
+    Zwraca (pdf, zapisany json, dokument) dopiero, gdy zapisane są wszystkie pliki.
+    """
+    input_root, output_root, trace_root = ROOT.parent / "input", ROOT.parent / "output", ROOT / "trace"
+    pdfs = sorted(p for p in input_root.rglob("*") if p.is_file() and p.suffix.lower() == ".pdf")
+    # Kilka plików naraz: OCR jednego idzie w czasie, gdy inny czeka na model (API z równoległością przyspiesza więcej).
+    workers = max(1, int((llm.model if llm else load_model()).get("workers", 1)))
+    results = []
+    with ThreadPoolExecutor(workers) as pool:
+        for pdf, (document, trace) in zip(pdfs, pool.map(lambda pdf: process_pdf(pdf, llm=llm), pdfs)):
+            relative = pdf.relative_to(input_root).with_suffix(".json")
+            destination, traced = output_root / relative, trace_root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            traced.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            traced.write_text(json.dumps(trace, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            label = f"{trace.get('class') or 'none'}, {'AI' if trace.get('method') == 'llm' else 'reguły'}"
+            print(f"{pdf.relative_to(input_root)} -> {destination.relative_to(ROOT.parent)} ({label})", flush=True)
+            results.append((pdf, destination, document))
+    return results
