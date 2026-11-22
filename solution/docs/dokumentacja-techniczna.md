@@ -5,7 +5,7 @@ Dokument dla osób, które wdrażają, oceniają lub rozwijają projekt. Opisuje
 Szczegóły uzupełniające:
 - [architektura.md](architektura.md) – krok po kroku, co dzieje się z tekstem dokumentu,
 - [konfiguracja-klasy.md](konfiguracja-klasy.md) – jak dodać lub zmienić klasę dokumentu,
-- [README](../README.md) – instalacja i polecenia, [RUN.md](../RUN.md) – komenda dla oceniających.
+- [README](../README.md) – instalacja i polecenia, [RUN.md](../../RUN.md) – komenda dla oceniających.
 
 ## 1. Co robi program
 
@@ -26,10 +26,10 @@ Każdy inny dokument (wyrok KIO, ogłoszenie, faktura, szkolenie…) dostaje pus
 
 ```
 /opt/
-├── RUN.md        komenda dla oceniających (kopia solution/RUN.md)
+├── RUN.md        komenda dla oceniających
 ├── input/        PDF-y wejściowe, np. input/case1/odwolanie.pdf
 ├── output/       wyniki, np. output/case1/odwolanie.json
-└── solution/     repozytorium
+└── solution/     kod aplikacji
     ├── app/      kod (Python)
     ├── config/   model.yaml, klasy dokumentów, słownik czynności
     ├── docs/     dokumentacja

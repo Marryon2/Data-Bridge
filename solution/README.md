@@ -17,8 +17,8 @@ Bez Tesseracta i LLM aplikacja nadal działa w trybie reguł (regex + słowniki)
 ### Na Windowsie
 
 1. **Zainstaluj Pythona.** Wejdź na [python.org](https://www.python.org/downloads/), pobierz najnowszą wersję i zainstaluj. Podczas instalacji zaznacz pole **„Add python.exe to PATH”**. To ważne.
-2. **Pobierz program.** Na tej stronie kliknij zielony przycisk **„Code”**, potem **„Download ZIP”**. Rozpakuj go do osobnego, pustego folderu, np. `C:\opt`.
-3. **Uruchom.** W rozpakowanym folderze kliknij dwa razy plik **`start.bat`**.
+2. **Pobierz program.** Na stronie projektu na GitHubie (https://github.com/Marryon2/Data-Bridge) kliknij zielony przycisk **„Code”**, potem **„Download ZIP”**. Rozpakuj go w dowolnym miejscu. W środku są foldery `input`, `output`, `solution` i plik `RUN.md`.
+3. **Uruchom.** Wejdź do folderu **`solution`** i kliknij dwa razy plik **`start.bat`**.
    - Za pierwszym razem program sam pobierze to, czego potrzebuje. Może to potrwać kilka minut.
    - Jeśli Windows zapyta o zgodę na instalację, kliknij **„Tak”**.
 4. Po chwili sama otworzy się przeglądarka ze stroną programu.
@@ -30,7 +30,7 @@ Bez Tesseracta i LLM aplikacja nadal działa w trybie reguł (regex + słowniki)
    sudo apt install python3 python3-venv tesseract-ocr tesseract-ocr-pol
    ```
 2. Pobierz program tak jak na Windowsie (**„Code”** → **„Download ZIP”**) i rozpakuj go.
-3. W terminalu wejdź do rozpakowanego folderu i wpisz po kolei:
+3. W terminalu wejdź do folderu `solution` w rozpakowanym programie i wpisz po kolei:
    ```
    python3 -m venv .venv
    .venv/bin/pip install -r requirements.txt
@@ -52,8 +52,8 @@ Bez Tesseracta i LLM aplikacja nadal działa w trybie reguł (regex + słowniki)
 ## Szybki start (Windows)
 
 ```bat
-git clone https://github.com/Marryon2/Data-Bridge.git
-cd Data-Bridge
+git clone https://github.com/Marryon2/Data-Bridge.git opt
+cd opt\solution
 copy .env.example .env
 start.bat
 ```
@@ -72,8 +72,8 @@ Na nowym komputerze potrzebne są tylko Python 3.13+ (z zaznaczonym „Add pytho
 ## Szybki start (Linux / macOS)
 
 ```bash
-git clone https://github.com/Marryon2/Data-Bridge.git
-cd Data-Bridge
+git clone https://github.com/Marryon2/Data-Bridge.git opt
+cd opt/solution
 cp .env.example .env
 sudo apt install tesseract-ocr tesseract-ocr-pol   # macOS: brew install tesseract tesseract-lang
 python3 -m venv .venv
@@ -139,20 +139,19 @@ Oceniający uruchamiają komendę z `/opt/RUN.md`. Układ na serwerze:
 
 ```
 /opt/
-├── RUN.md       ← kopia RUN.md z repozytorium
+├── RUN.md       ← komenda dla oceniających
 ├── input/       ← dokumenty od oceniających
 ├── output/      ← wyniki
-└── solution/    ← to repozytorium
+└── solution/    ← kod aplikacji
 ```
 
 ```bash
-cd /opt/solution               # katalog już istnieje, dlatego git init zamiast git clone
+cd /opt                        # repozytorium to cały /opt; katalog już istnieje, dlatego git init zamiast git clone
 git init -q
 git remote add origin https://github.com/Marryon2/Data-Bridge.git
 git fetch -q origin main
 git checkout -f -B main origin/main
-sudo cp RUN.md /opt/RUN.md
-sudo mkdir -p /opt/input /opt/output
+cd /opt/solution
 sudo cp .env.example .env          # opcjonalnie: klucze API
 sudo docker compose build          # obraz z Pythonem 3.13 i Tesseractem; w czasie oceny nic się nie pobiera
 ```
