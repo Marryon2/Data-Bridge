@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import sys
 import threading
 import time
+import webbrowser
 from email import policy
 from email.parser import BytesParser
 from html import escape
@@ -84,6 +86,7 @@ main { flex: 1; }
 .start { margin: 0; }
 
 .warn { margin: 1.5em 0; padding: 1em 1.25em; border-left: .25rem solid #d5233f; background: #f1f1f1; }
+.alert { margin: 1em 0 0; padding: 1em 1.25em; border: .125rem solid #d5233f; border-left-width: .5rem; background: #fdecee; }
 
 .accordion { list-style: none; padding: 0; margin: 1.56256em 0 0; }
 .accordion > li { border-top: 1px solid #f1f1f1; padding: .93756em 0; }
@@ -129,6 +132,7 @@ html.contrast .btn:hover { background: #000; color: #ff0; }
 html.contrast .btn:disabled { background: #fff; border-color: #fff; color: #000; }
 html.contrast .warn, html.contrast .accordion pre { background: #000; color: #fff; border: .0625rem solid #fff; }
 html.contrast .warn { border-left: .25rem solid #ff0; }
+html.contrast .alert { background: #000; color: #fff; border-color: #ff0; }
 html.contrast .govpl, html.contrast .accordion > li { border-color: #fff; }
 html.contrast .govpl__portal-name::before { background-color: #ff0; }
 html.contrast .footer { background: #000; border-top-color: #ff0; }
@@ -173,7 +177,7 @@ function toggleContrast() {
 <main class="main-container" id="main-content">
 <div class="service-card">
 <h1>Przekształć dokumenty PDF w dane JSON</h1>
-<p>Wgraj pliki PDF do folderu <code>input</code>, a potem kliknij <strong>Start</strong>. Gdy wszystkie pliki JSON zostaną zapisane w folderze <code>output</code>, pojawią się poniżej, a przetworzone pliki zostaną usunięte z folderu <code>input</code>.</p>
+<p>Wgraj pliki PDF do folderu <code>input</code>, a potem kliknij <strong>Start</strong>. Każde wgranie trafia do osobnego folderu (<code>input/case1</code>, <code>input/case2</code>, …), a wyniki do folderu o tej samej nazwie w <code>output</code>. Start przetwarza tylko pliki, które nie mają jeszcze wyniku. Gdy wszystkie pliki JSON zostaną zapisane, pojawią się poniżej. Pliki PDF zostają w folderze <code>input</code>.</p>
 <form method="post" action="/upload" enctype="multipart/form-data">
 <label class="upload">
 <span class="btn btn-secondary">Wgraj pliki do input</span>
@@ -185,6 +189,7 @@ function toggleContrast() {
 <form class="start" method="post" action="/start" onsubmit="var b = this.querySelector('button'); b.disabled = true; b.textContent = 'Przetwarzanie…';">
 <button type="submit" class="btn">Start</button>
 </form>
+<!--ALERT-->
 <div class="warn" role="note"><strong>Uwaga:</strong> jeżeli program nie będzie w stanie połączyć się z AI, użyje skryptów lokalnych, a precyzja wyników może być niższa.</div>
 <h2>Output</h2>
 <section aria-live="polite">
@@ -214,20 +219,46 @@ def _files(body: bytes, content_type: str) -> list[tuple[str, bytes]]:
     return found
 
 
-def _waiting() -> list[str]:
+def _inputs() -> list[str]:
     return sorted(p.relative_to(INPUT).as_posix() for p in INPUT.rglob("*") if p.is_file() and p.suffix.lower() == ".pdf")
 
 
-def _html(blocks: list[tuple[str, dict]], note: str = "") -> bytes:
+def _waiting() -> list[str]:
+    """PDF-y z input/ bez wyniku w output/: tylko je przetwarza Start."""
+    return [name for name in _inputs() if not (OUTPUT / name).with_suffix(".json").exists()]
+
+
+def _next_case() -> Path:
+    """Folder na jedno wgranie: input/caseN, N o jeden większe od najwyższego w input/ i output/.
+
+    Liczy też output/: gdy ktoś usunie input/caseN, output/caseN zostaje i nie może zostać nadpisany.
+    """
+    used = [
+        int(p.name[4:])
+        for root in (INPUT, OUTPUT) if root.is_dir()
+        for p in root.iterdir() if p.is_dir() and p.name.startswith("case") and p.name[4:].isdigit()
+    ]
+    return INPUT / f"case{max(used, default=0) + 1}"
+
+
+def _html(blocks: list[tuple[str, dict]], note: str = "", alert: str = "") -> bytes:
     parts = []
     for name, document in blocks:
         rendered = json.dumps(document, ensure_ascii=False, indent=2)
         parts.append(f'<li><details><summary>{escape(name)}</summary><pre>{escape(rendered)}</pre></details></li>')
     waiting = _waiting()
-    status = note or (f"W folderze input ({len(waiting)}): " + ", ".join(waiting) if waiting else "Folder input jest pusty.")
+    if note:
+        status = note
+    elif waiting:
+        status = f"Do przetworzenia ({len(waiting)}): " + ", ".join(waiting)
+    else:
+        status = "Wszystkie pliki z input mają już wyniki w output." if _inputs() else "Folder input jest pusty."
     results = '<ul class="accordion">' + "\n".join(parts) + "</ul>" if parts else _EMPTY
     page = _PAGE.replace("<!--RESULTS-->", results).replace("<!--WAITING-->", escape(status))
-    if blocks or note:
+    if alert:
+        title, _, text = alert.partition(": ")
+        page = page.replace("<!--ALERT-->", f'<div class="alert" role="alert"><strong>{escape(title)}:</strong> {escape(text)}</div>')
+    if blocks or note or alert:
         # Zamienia wpis POST w historii na GET: odświeżenie nie uruchamia przetwarzania ponownie.
         page = page.replace("</body>", "<script>history.replaceState(null, '', '/');</script>\n</body>")
     return page.encode("utf-8")
@@ -241,6 +272,7 @@ def serve() -> None:
     # Przyciski AI zawsze w trybie llm, niezależnie od `extraction` w config/model.yaml.
     ai = LLMClient({**load_model(), "extraction": "llm"})
     busy = threading.Lock()  # jedno przetwarzanie naraz: drugi Start nie może brać tych samych plików
+    uploading = threading.Lock()
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
@@ -257,31 +289,43 @@ def serve() -> None:
             length = int(self.headers.get("Content-Length", "0"))
             body = self.rfile.read(length)
             if self.path == "/upload":
-                INPUT.mkdir(parents=True, exist_ok=True)
-                for name, payload in _files(body, self.headers.get("Content-Type", "")):
-                    if name.lower().endswith(".pdf"):  # _files zostawia samą nazwę pliku: bez ścieżek spoza input/
-                        (INPUT / name).write_bytes(payload)
+                # _files zostawia samą nazwę pliku: bez ścieżek spoza input/.
+                pdfs = [(n, p) for n, p in _files(body, self.headers.get("Content-Type", "")) if n.lower().endswith(".pdf")]
+                if pdfs:
+                    with uploading:  # dwa równoległe wgrania nie mogą dostać tego samego caseN
+                        case = _next_case()
+                        case.mkdir(parents=True)
+                    for name, payload in pdfs:
+                        (case / name).write_bytes(payload)
                 self.send_response(303)  # po wgraniu wraca na stronę z listą plików w input/
                 self.send_header("Location", "/")
                 self.end_headers()
+                return
+            if not _waiting():
+                alert = (
+                    "Brak nowych plików: wszystkie pliki z input mają już wyniki w output. Wgraj nowe pliki przed naciśnięciem Start."
+                    if _inputs() else "Brak plików: wgraj przynajmniej jeden plik PDF przed naciśnięciem Start."
+                )
+                self._send(_html([], alert=alert))
                 return
             if busy.locked():
                 self._send(_html([], "Przetwarzanie już trwa. Poczekaj na wynik."))
                 return
             with busy:
                 started = time.perf_counter()
-                results = process_input(ai)
-                # Dopiero gdy zapisane są WSZYSTKIE JSON-y: usuń przetworzone PDF-y z input/.
-                for pdf, _, _ in results:
-                    pdf.unlink(missing_ok=True)
-            blocks = [(json_path.relative_to(OUTPUT).as_posix(), document) for _, json_path, document in results]
-            note = f"Gotowe: {len(results)} plików w {time.perf_counter() - started:.1f} s." if results else "Brak plików PDF w folderze input."
-            self._send(_html(blocks, note))
+                # PDF-y zostają w input/caseN; przetwarzane są tylko te bez wyniku w output/.
+                results = process_input(ai, pending_only=True)
+            blocks = [(json_path.name, document) for _, json_path, document in results]
+            self._send(_html(blocks, f"Gotowe: {len(results)} plików w {time.perf_counter() - started:.1f} s."))
 
         def log_message(self, fmt, *args):
             print(f"[ui] {self.address_string()} {fmt % args}")
 
-    ThreadingHTTPServer(("0.0.0.0", port), Handler).serve_forever()
+    server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
+    print(f"Strona działa: http://localhost:{port}  (zamknij to okno, aby zatrzymać)", flush=True)
+    if "--open" in sys.argv:  # start.bat: przeglądarka dopiero, gdy serwer już słucha
+        webbrowser.open(f"http://localhost:{port}")
+    server.serve_forever()
 
 
 if __name__ == "__main__":

@@ -12,6 +12,43 @@ Obsługiwane klasy: `odwolanie`, `pelnomocnictwo`, `przelew` (potwierdzenie prze
 
 Bez Tesseracta i LLM aplikacja nadal działa w trybie reguł (regex + słowniki).
 
+## Jak uruchomić program (instrukcja dla każdego)
+
+### Na Windowsie
+
+1. **Zainstaluj Pythona.** Wejdź na [python.org](https://www.python.org/downloads/), pobierz najnowszą wersję i zainstaluj. Podczas instalacji zaznacz pole **„Add python.exe to PATH”**. To ważne.
+2. **Pobierz program.** Na tej stronie kliknij zielony przycisk **„Code”**, potem **„Download ZIP”**. Rozpakuj go do osobnego, pustego folderu, np. `C:\opt`.
+3. **Uruchom.** W rozpakowanym folderze kliknij dwa razy plik **`start.bat`**.
+   - Za pierwszym razem program sam pobierze to, czego potrzebuje. Może to potrwać kilka minut.
+   - Jeśli Windows zapyta o zgodę na instalację, kliknij **„Tak”**.
+4. Po chwili sama otworzy się przeglądarka ze stroną programu.
+
+### Na Linuksie
+
+1. Otwórz **Terminal** i wpisz to polecenie, żeby zainstalować potrzebne rzeczy:
+   ```
+   sudo apt install python3 python3-venv tesseract-ocr tesseract-ocr-pol
+   ```
+2. Pobierz program tak jak na Windowsie (**„Code”** → **„Download ZIP”**) i rozpakuj go.
+3. W terminalu wejdź do rozpakowanego folderu i wpisz po kolei:
+   ```
+   python3 -m venv .venv
+   .venv/bin/pip install -r requirements.txt
+   .venv/bin/python -m app --serve --open
+   ```
+   Przy kolejnych uruchomieniach wystarczy samo ostatnie polecenie.
+4. Przeglądarka otworzy stronę programu. Jeśli się nie otworzy, wpisz w niej adres **localhost:8000**.
+
+### Jak korzystać
+
+1. Kliknij **„Wgraj pliki do input”** i wybierz pliki PDF.
+2. Kliknij **„Start”**.
+3. Poczekaj. Gotowe wyniki pojawią się na dole strony. Kliknij nazwę pliku, żeby go rozwinąć.
+
+**Pamiętaj:**
+- Nie zamykaj czarnego okna (terminala), dopóki korzystasz z programu. Jego zamknięcie wyłącza program.
+- Komputer musi mieć internet. Bez połączenia z serwerem AI program dalej działa, ale wyniki są mniej dokładne.
+
 ## Szybki start (Windows)
 
 ```bat
@@ -21,13 +58,16 @@ copy .env.example .env
 start.bat
 ```
 
-`start.bat` po kolei:
+`start.bat` (dwuklik) po kolei:
 
-1. Sprawdza Tesseract OCR. Jeśli go nie ma, instaluje go przez `winget` (`UB-Mannheim.TesseractOCR`, potrzebne potwierdzenie administratora). Bez Tesseracta skany PDF bez warstwy tekstowej dają pusty wynik.
-2. Jeśli Tesseract nie ma języka polskiego, pobiera `pol.traineddata` do `.tessdata/` w projekcie.
-3. Tworzy `.venv`, instaluje `requirements.txt` i uruchamia `python -m app`. Argumenty są przekazywane dalej, np. `start.bat --serve` otwiera formularz WWW.
+1. Sprawdza, czy jest Python. Nie instaluje go: gdy go brak, wypisuje, skąd go pobrać, i kończy.
+2. Sprawdza Tesseract OCR. Jeśli go nie ma, instaluje go przez `winget` (`UB-Mannheim.TesseractOCR`, potrzebne potwierdzenie administratora). Bez Tesseracta skany PDF bez warstwy tekstowej dają pusty wynik.
+3. Jeśli Tesseract nie ma języka polskiego, pobiera `pol.traineddata` do `.tessdata/` w projekcie.
+4. Tworzy `.venv`, instaluje `requirements.txt`, uruchamia stronę WWW i otwiera ją w przeglądarce (<http://localhost:8000>). Zamknięcie okna konsoli zatrzymuje stronę.
 
-Na nowym komputerze potrzebne są tylko Python 3.13+ i `winget`, który jest w Windows 10 i 11. Gdy instalacja Tesseracta się nie uda, `start.bat` wypisuje ostrzeżenie i uruchamia aplikację bez OCR.
+`start.bat --cli` zamiast strony przetwarza od razu wszystkie PDF-y z `input/` (folder obok projektu) do `output/`.
+
+Na nowym komputerze potrzebne są tylko Python 3.13+ (z zaznaczonym „Add python.exe to PATH”) i `winget`, który jest w Windows 10 i 11. Gdy instalacja Tesseracta się nie uda, `start.bat` wypisuje ostrzeżenie i uruchamia aplikację bez OCR.
 
 ## Szybki start (Linux / macOS)
 
@@ -46,7 +86,7 @@ python3 -m venv .venv
 ### Przetwarzanie wsadowe (CLI)
 
 1. Włóż PDF-y do `input/` obok katalogu projektu (`/opt/input/` przy projekcie w `/opt/solution`), np. `input/case1/odwolanie_nr_1.pdf`. Przetwarzany jest każdy PDF z `input/`, na dowolnej głębokości.
-2. Uruchom `python -m app` (albo `start.bat`).
+2. Uruchom `python -m app` (albo `start.bat --cli`).
 3. Wyniki trafiają pod tę samą ścieżkę co plik wejściowy:
    - `output/case1/odwolanie_nr_1.json` (też obok projektu): JSON dokumentu,
    - `trace/case1/odwolanie_nr_1.json`: ślad (cytat, strona, metoda, pewność każdego pola).
@@ -57,7 +97,7 @@ python3 -m venv .venv
 .venv\Scripts\python.exe -m app --serve
 ```
 
-Otwórz <http://localhost:8000> (port zmienisz w `.env` zmienną `PORT`). **Wgraj pliki do input** zapisuje PDF-y w `input/`, **Start** przetwarza wszystko z `input/`, a gdy wszystkie JSON-y są już w `output/`, pokazuje je w polu Output i usuwa przetworzone PDF-y z `input/`. Tekst czyta PyMuPDF (skany: Tesseract OCR), dane wyciąga model z `config/model.yaml`. Gdy serwer AI nie odpowiada, wynik pochodzi z reguł, a etykieta mówi „skrypt (AI niedostępne)”.
+Otwórz <http://localhost:8000> (port zmienisz w `.env` zmienną `PORT`). **Wgraj pliki do input** zapisuje PDF-y w nowym folderze `input/caseN` (każde wgranie osobno; N rośnie i nie powtarza folderu, który jest już w `output/`). **Start** przetwarza tylko PDF-y z `input/`, które nie mają jeszcze wyniku, zapisuje je w `output/caseN/<nazwa>.json` i, gdy wszystkie JSON-y są już zapisane, pokazuje je w polu Output. PDF-y zostają w `input/`. (CLI `python -m app` przetwarza zawsze wszystko.) Tekst czyta PyMuPDF (skany: Tesseract OCR), dane wyciąga model z `config/model.yaml`. Gdy serwer AI nie odpowiada, wynik pochodzi z reguł, a etykieta mówi „skrypt (AI niedostępne)”.
 
 ## Konfiguracja
 
@@ -140,6 +180,7 @@ Scorer liczy F1 na liściach JSON: stringi porównuje dokładnie, liczby `200` i
 
 ## Dokumentacja
 
+- [Dokumentacja techniczna](docs/dokumentacja-techniczna.md) (w tym model Bielik i przejście na Bielika przez API)
 - [Architektura](docs/architektura.md)
 - [Konfiguracja klasy dokumentu](docs/konfiguracja-klasy.md)
 

@@ -593,14 +593,17 @@ def process_pdf(path: str | Path, llm=None) -> tuple[dict, dict]:
     return document, trace
 
 
-def process_input(llm=None) -> list[tuple[Path, Path, dict]]:
+def process_input(llm=None, pending_only: bool = False) -> list[tuple[Path, Path, dict]]:
     """Każdy PDF z input/ (dowolna głębokość) -> JSON w output/ pod tą samą ścieżką, ślad w trace/.
 
     input/ i output/ leżą obok projektu (/opt/input, /opt/solution); w kontenerze ROOT=/app, więc /input i /output.
+    pending_only (GUI): pomija PDF-y, które mają już JSON w output/. CLI oceny przetwarza zawsze wszystko.
     Zwraca (pdf, zapisany json, dokument) dopiero, gdy zapisane są wszystkie pliki.
     """
     input_root, output_root, trace_root = ROOT.parent / "input", ROOT.parent / "output", ROOT / "trace"
     pdfs = sorted(p for p in input_root.rglob("*") if p.is_file() and p.suffix.lower() == ".pdf")
+    if pending_only:
+        pdfs = [p for p in pdfs if not (output_root / p.relative_to(input_root).with_suffix(".json")).exists()]
     # Kilka plików naraz: OCR jednego idzie w czasie, gdy inny czeka na model (API z równoległością przyspiesza więcej).
     workers = max(1, int((llm.model if llm else load_model()).get("workers", 1)))
     results = []
