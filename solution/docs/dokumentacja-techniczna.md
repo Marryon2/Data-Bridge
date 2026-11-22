@@ -92,12 +92,12 @@ Plik uszkodzony albo nieczytelny nie przerywa wsadu: dostaje `{}`, a błąd traf
 
 | | |
 |---|---|
-| Model | `SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M` |
+| Model | `speakleash/bielik-minitron-7b-v3.0-instruct` |
 | Rodzina | Bielik – otwarty polski model językowy projektu SpeakLeash |
-| Wariant | Minitron 7B (ok. 7,5 mld parametrów), wersja instrukcyjna, kwantyzacja 4-bitowa Q4_K_M |
-| Serwer (dziś) | Ollama, natywne API `/api/chat`, adres w `config/model.yaml` |
-| Klucz API (dziś) | brak – serwer nie wymaga klucza |
-| Zasoby hosta | ok. 6,6 GB pamięci GPU przy `num_ctx: 12288` |
+| Wariant | Minitron 7B (ok. 7,5 mld parametrów), wersja instrukcyjna |
+| Serwer | RunPod Serverless (vLLM), API zgodne z OpenAI, kontekst do 32 768 tokenów |
+| Klucz API | `RUNPOD_API_KEY` w `.env`; ID endpointu w `RUNPOD_ENDPOINT_ID` |
+| Wcześniej | własna Ollama z wariantem `Q4_K_M` (natywne API `/api/chat`) – tryb nadal obsługiwany |
 
 Model działa zdalnie: na komputerze z programem nie trzeba pobierać ani uruchamiać Bielika.
 
@@ -142,9 +142,9 @@ Odrzucona wartość staje się `null`. Lepiej zostawić puste pole niż wpisać 
 
 | Klucz | Wartość dziś | Znaczenie |
 |---|---|---|
-| `name` | `SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M` | nazwa modelu przekazywana do API |
-| `endpoint` | `http://34.12.224.222:11434/api/chat` | adres; końcówka `/api/chat` włącza tryb natywnej Ollamy, każdy inny adres – tryb zgodny z OpenAI |
-| `api_key_env` | `""` | nazwa zmiennej środowiskowej z kluczem; pusta = serwer bez klucza |
+| `name` | `speakleash/bielik-minitron-7b-v3.0-instruct` | nazwa modelu przekazywana do API; musi być dokładnie taka jak w `/openai/v1/models` (wielkość liter ma znaczenie, inaczej RunPod zwraca 502) |
+| `endpoint` | `https://api.runpod.ai/v2/${RUNPOD_ENDPOINT_ID}/openai/v1/chat/completions` | adres; `${ZMIENNA}` jest wstawiana z `.env`; końcówka `/api/chat` włącza tryb natywnej Ollamy, każdy inny adres – tryb zgodny z OpenAI |
+| `api_key_env` | `RUNPOD_API_KEY` | nazwa zmiennej środowiskowej z kluczem; pusta = serwer bez klucza |
 | `num_ctx` | `12288` | rozmiar kontekstu; działa tylko w trybie Ollamy |
 | `timeout_s` | `300` | limit czasu jednego zapytania |
 | `temperature` | `0` | odpowiedzi powtarzalne |
@@ -156,7 +156,7 @@ Klucze API trzymamy w pliku `.env` obok `config/` (wzór: `.env.example`). Plik 
 
 ### 5.6. Protokół wywołania
 
-Tryb natywnej Ollamy (dziś):
+Tryb natywnej Ollamy (własny serwer):
 
 ```http
 POST http://<host>:11434/api/chat
@@ -169,7 +169,7 @@ Content-Type: application/json
 
 Odpowiedź: `message.content` zawiera JSON jako tekst.
 
-Tryb zgodny z OpenAI (Chat Completions):
+Tryb zgodny z OpenAI (Chat Completions, dziś RunPod):
 
 ```http
 POST <endpoint>
@@ -182,28 +182,29 @@ Authorization: Bearer <klucz>        (tylko gdy ustawiono api_key_env)
 
 Odpowiedź: `choices[0].message.content` zawiera JSON jako tekst.
 
-## 6. Przejście na Bielika przez API
+## 6. Bielik przez API (RunPod)
 
-Kod obsługuje już API zgodne z OpenAI, więc zmiana dostawcy nie wymaga zmian w kodzie. Wystarczy konfiguracja.
+Program korzysta z Bielika na RunPod Serverless. Kod obsługuje API zgodne z OpenAI, więc zmiana dostawcy nie wymaga zmian w kodzie, tylko konfiguracji. Poniżej kroki dla RunPod; dla innego dostawcy są takie same.
 
 ### 6.1. Kroki
 
 1. W `config/model.yaml` ustaw adres i nazwę modelu u dostawcy:
    ```yaml
-   name: <nazwa modelu Bielik u dostawcy>
-   endpoint: https://<dostawca>/v1/chat/completions
-   api_key_env: BIELIK_API_KEY
+   name: speakleash/bielik-minitron-7b-v3.0-instruct   # dokładnie jak w /openai/v1/models
+   endpoint: https://api.runpod.ai/v2/${RUNPOD_ENDPOINT_ID}/openai/v1/chat/completions
+   api_key_env: RUNPOD_API_KEY
    ```
 2. W `.env` (lokalnie) i w `/opt/solution/.env` (na VM) dopisz klucz:
    ```
-   BIELIK_API_KEY=<klucz>
+   RUNPOD_API_KEY=rpa_...
+   RUNPOD_ENDPOINT_ID=<id endpointu>
    ```
    Zmienną dopisz też w `.env.example` bez wartości, żeby inni wiedzieli, że jest potrzebna.
 3. Sprawdź jedno zapytanie ręcznie, zanim uruchomisz wsad:
    ```bash
-   curl -s https://<dostawca>/v1/chat/completions \
-     -H "Authorization: Bearer $BIELIK_API_KEY" -H "Content-Type: application/json" \
-     -d '{"model":"<nazwa>","temperature":0,"response_format":{"type":"json_object"},
+   curl -s https://api.runpod.ai/v2/$RUNPOD_ENDPOINT_ID/openai/v1/chat/completions \
+     -H "Authorization: Bearer $RUNPOD_API_KEY" -H "Content-Type: application/json" \
+     -d '{"model":"speakleash/bielik-minitron-7b-v3.0-instruct","temperature":0,"response_format":{"type":"json_object"},
           "messages":[{"role":"user","content":"Zwróć JSON {\"ok\": true}"}]}'
    ```
    W odpowiedzi `choices[0].message.content` powinno zawierać `{"ok": true}`.
@@ -225,7 +226,7 @@ Kod obsługuje już API zgodne z OpenAI, więc zmiana dostawcy nie wymaga zmian 
 - **Ciche przejście na reguły.** Zły adres, błędny klucz, przekroczony limit zapytań albo odpowiedź w złym formacie nie zatrzymują programu: zadziałają reguły z niższą precyzją. Po zmianie sprawdź w `trace/`, że pole `method` ma wartość `llm`. Przy błędzie połączenia lub błędzie HTTP w konsoli pojawia się „LLM niedostępne (próba N)”; odpowiedź w złym formacie przechodzi na reguły bez komunikatu.
 - **Brak klucza.** Gdy `api_key_env` wskazuje zmienną, której nie ma w `.env`, program od razu uznaje model za niedostępny i pracuje na regułach (w trybie wsadowym wypisuje o tym komunikat).
 - **Równoległość.** Ollama obsługuje zapytania po kolei, dlatego `workers: 2`. API z równoległością skorzysta z większej wartości, ale trzeba ją dopasować do limitu zapytań dostawcy.
-- **Czas.** `timeout_s: 300` jest dobrany do własnego serwera. U dostawcy z limitami warto go zmniejszyć, żeby zawieszone zapytanie szybciej przechodziło na reguły.
+- **Czas.** `timeout_s: 300` pokrywa cold start RunPod Serverless (pierwsze zapytanie po przerwie czeka na uruchomienie maszyny).
 - **Dane osobowe.** Dokumenty zawierają imiona, nazwiska, PESEL, adresy i numery rachunków. Przy zewnętrznym API ich tekst opuszcza serwer. Przed włączeniem sprawdź umowę z dostawcą (miejsce przetwarzania, przechowywanie danych, RODO).
 - **Inny wariant modelu.** Jeśli dostawca udostępnia innego Bielika (np. większego), wyniki mogą się zmienić także na plus. Prompt był dopracowany pod wariant 7B, więc zmierz F1 przed i po zmianie.
 
@@ -251,7 +252,28 @@ Serwer `http.server` z biblioteki standardowej (`app/ui.py`), port z `PORT` (dom
 - `python -m app.score --data <katalog>` – F1 liści JSON względem odpowiedzi organizatora, osobno dla każdego pola.
 - Zasada: odpowiedzi z zestawów testowych służą wyłącznie do liczenia F1, nigdy do strojenia projektu.
 
-Zmierzone czasy (Bielik 7B na serwerze z GPU, `workers: 2`): potwierdzenie przelewu ok. 13 s, odwołanie z potwierdzeniem przelewu ok. 66 s, trzy dokumenty ok. 83 s. Najdłużej trwa generowanie odpowiedzi przez model.
+### Wyniki własnych testów (Bielik na RunPod, `workers: 2`)
+
+Zestaw 35 PDF-ów: 18 z warstwą tekstową i 17 skanów (OCR Tesseract `pol`). Wszystkie przetworzone przez model (`method: llm`). F1 dokładnego dopasowania liści JSON (`app.score.score_pair`).
+
+| Typ dokumentu | Plików | Średnia F1 |
+|---|---|---|
+| Odwołanie | 12 | 0,962 |
+| Potwierdzenie przelewu | 12 | 0,917 |
+| Pełnomocnictwo | 11 | 0,864 |
+| Razem (średnia z dokumentów) | 35 | 0,916 |
+| Razem (F1 ze wszystkich pól łącznie) | 35 | 0,934 |
+
+Odwołania i przelewy z warstwą tekstową: F1 1,000. Skany wypadają nieco słabiej (błędy OCR).
+
+| Czas | |
+|---|---|
+| Cały zestaw (35 PDF) | 180 s |
+| Średnio na plik (2 pliki naraz) | 5,1 s |
+| Jeden plik od wejścia do wyniku | średnio 10,1 s, najdłużej 19 s (skan) |
+| 150 PDF (limit organizatora: 45 min) | ok. 13 min |
+
+Pomiar na komputerze z Windows przy rozgrzanym endpoincie RunPod; pierwsze zapytanie po przerwie może czekać dłużej na start maszyny (cold start).
 
 ## 9. Znane ograniczenia
 

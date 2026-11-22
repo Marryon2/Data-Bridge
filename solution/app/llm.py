@@ -13,14 +13,17 @@ class LLMClient:
 
     def __init__(self, model: dict | None = None):
         load_env()
-        self.model = model or load_model()
+        self.model = dict(model or load_model())
+        # ${ZMIENNA} w adresie (np. ID endpointu RunPod) bierzemy z .env, żeby nie trzymać go w repozytorium.
+        self.model["endpoint"] = os.path.expandvars(self.model.get("endpoint") or "")
         # Pusty api_key_env = serwer bez klucza (np. własna Ollama).
         self.key_env = self.model.get("api_key_env", "MISTRAL_API_KEY")
         self.api_key = os.environ.get(self.key_env, "").strip() if self.key_env else ""
 
     @property
     def available(self) -> bool:
-        return bool(self.model.get("endpoint")) and (not self.key_env or bool(self.api_key))
+        endpoint = self.model["endpoint"]
+        return bool(endpoint) and "$" not in endpoint and (not self.key_env or bool(self.api_key))
 
     def complete_json(self, system: str, user: str) -> dict | None:
         if not self.available:

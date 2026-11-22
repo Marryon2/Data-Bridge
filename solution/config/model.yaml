@@ -1,10 +1,13 @@
-# Własny serwer Ollama z polskim modelem Bielik. Natywne API /api/chat, bo tylko ono pozwala ustawić num_ctx
-# (API /v1 zgodne z OpenAI ucina prompt do 4096 tokenów). Bez klucza: api_key_env pusty.
-# Dla Mistral La Plateforme: endpoint https://api.mistral.ai/v1/chat/completions, name ministral-3b-latest,
+# Bielik na RunPod Serverless (vLLM, API zgodne z OpenAI, max_model_len 32768). Klucz RUNPOD_API_KEY i ID endpointu
+# RUNPOD_ENDPOINT_ID są w .env (nie w repozytorium). Nazwa modelu musi być dokładnie taka jak w /openai/v1/models.
+# Własna Ollama zamiast RunPod: name SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M,
+# endpoint http://<host>:11434/api/chat, api_key_env "" (natywne /api/chat, bo tylko ono pozwala ustawić num_ctx).
+# Mistral La Plateforme: endpoint https://api.mistral.ai/v1/chat/completions, name ministral-3b-latest,
 # api_key_env MISTRAL_API_KEY.
-name: SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M
-endpoint: http://34.12.224.222:11434/api/chat
-api_key_env: ""
+name: speakleash/bielik-minitron-7b-v3.0-instruct
+endpoint: https://api.runpod.ai/v2/${RUNPOD_ENDPOINT_ID}/openai/v1/chat/completions
+api_key_env: RUNPOD_API_KEY
+# num_ctx działa tylko z natywnym API Ollamy (/api/chat); RunPod ma limit ustawiony po stronie serwera.
 # 12288: najdłuższy prompt (tekst przycięty do 14 000 znaków + wzór) to ~7800 tokenów + odpowiedź, a model wciąż
 # mieści się w całości w GPU hosta (6,6 GB). Przy 16384 część szła na CPU i generowanie było ~25% wolniejsze.
 num_ctx: 12288

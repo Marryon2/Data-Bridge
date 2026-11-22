@@ -8,7 +8,7 @@ Obsługiwane klasy: `odwolanie`, `pelnomocnictwo`, `przelew` (potwierdzenie prze
 
 - Python 3.13 lub nowszy
 - opcjonalnie [Tesseract OCR](https://github.com/tesseract-ocr/tesseract) z językiem polskim (`pol`), do skanów bez warstwy tekstowej
-- opcjonalnie serwer LLM (domyślnie Ollama z modelem Bielik, patrz [Model](#model))
+- opcjonalnie serwer LLM (domyślnie Bielik na RunPod Serverless, patrz [Model](#model))
 
 Bez Tesseracta i LLM aplikacja nadal działa w trybie reguł (regex + słowniki).
 
@@ -105,19 +105,23 @@ Plik `.env` (wzór w `.env.example`):
 
 | Zmienna | Znaczenie |
 |---|---|
+| `RUNPOD_API_KEY` | klucz RunPod (`rpa_...`) do modelu Bielik |
+| `RUNPOD_ENDPOINT_ID` | ID endpointu RunPod Serverless z Bielikiem |
 | `MISTRAL_API_KEY` | klucz, tylko jeśli używasz Mistral La Plateforme |
 | `DATA_DIR` | katalog z danymi treningowymi (`dane/przyklad_XX/*.json`) dla scorera i części testów |
 | `PORT` | port formularza WWW, domyślnie `8000` |
 
 ### Model
 
-`config/model.yaml` wskazuje serwer LLM. Domyślnie jest to Ollama (natywne API `/api/chat`) z modelem `SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M`. Żeby użyć własnego serwera:
+`config/model.yaml` wskazuje serwer LLM. Domyślnie jest to RunPod Serverless (vLLM, API zgodne z OpenAI) z modelem `speakleash/bielik-minitron-7b-v3.0-instruct`. Adres to `https://api.runpod.ai/v2/${RUNPOD_ENDPOINT_ID}/openai/v1/chat/completions`: ID endpointu i klucz program bierze z `.env`. Bez nich działają same reguły.
+
+Zamiast RunPod możesz użyć własnej Ollamy:
 
 ```bash
 ollama pull SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M
 ```
 
-Potem w `config/model.yaml` ustaw `endpoint: http://localhost:11434/api/chat`.
+Potem w `config/model.yaml` ustaw `name: SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M`, `endpoint: http://localhost:11434/api/chat` i `api_key_env: ""`.
 
 Mistral La Plateforme: `endpoint: https://api.mistral.ai/v1/chat/completions`, `name: ministral-3b-latest`, `api_key_env: MISTRAL_API_KEY`.
 

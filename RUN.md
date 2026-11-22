@@ -20,8 +20,15 @@ Układ katalogów: kod w `/opt/solution`, dane w `/opt/input` i `/opt/output`.
 |---|---|---|
 | Obraz Dockera `odwolania2json:latest` (Python 3.13, zależności z `requirements.txt`) | zbudowany wcześniej na tym serwerze | – |
 | OCR skanów: Tesseract z językiem polskim | lokalnie, w obrazie | – |
-| LLM: Bielik 7.5B (`SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M`, otwarty model) przez API Ollama | adres `endpoint` w `config/model.yaml` | brak, serwer nie wymaga klucza |
+| LLM: Bielik 7B (`speakleash/bielik-minitron-7b-v3.0-instruct`, otwarty model) na **RunPod Serverless** (vLLM, API zgodne z OpenAI) | `https://api.runpod.ai/v2/<RUNPOD_ENDPOINT_ID>/openai/v1/chat/completions` (`config/model.yaml`) | `RUNPOD_API_KEY` w `/opt/solution/.env` |
 
-Klucze API, jeśli model zostanie przełączony na usługę z kluczem, są w `/opt/solution/.env` (wzór: `.env.example`). Nazwę zmiennej z kluczem wskazuje `api_key_env` w `config/model.yaml`. Plik `.env` nie jest w repozytorium.
+Klucz API i ID endpointu są w `/opt/solution/.env` (wzór: `.env.example`), nie w kodzie ani w repozytorium:
+
+```
+RUNPOD_API_KEY=rpa_...
+RUNPOD_ENDPOINT_ID=...
+```
+
+Docker przekazuje je do kontenera przez `env_file` w `docker-compose.yml`. Pierwsze zapytanie po dłuższej przerwie może czekać na start maszyny RunPod (tzw. cold start); limit czasu to 300 s na zapytanie.
 
 Gdy serwer LLM nie odpowiada, przetwarzanie i tak się kończy: dane wyciągają wtedy reguły z `config/classes/*.yaml`.

@@ -52,6 +52,20 @@ def test_llm_without_key_returns_none(monkeypatch):
     assert LLMClient({"name": "b", "endpoint": "http://localhost:11434/v1/chat/completions", "api_key_env": ""}).available
 
 
+def test_llm_endpoint_id_from_env(monkeypatch):
+    from app.llm import LLMClient
+
+    monkeypatch.setattr("app.llm.load_env", lambda: None)  # niezależnie od lokalnego .env
+    runpod = {"name": "b", "endpoint": "https://api.runpod.ai/v2/${RUNPOD_ENDPOINT_ID}/openai/v1/chat/completions",
+              "api_key_env": "RUNPOD_API_KEY"}
+    monkeypatch.setenv("RUNPOD_API_KEY", "rpa_test")
+    monkeypatch.delenv("RUNPOD_ENDPOINT_ID", raising=False)
+    assert not LLMClient(runpod).available  # brak ID w .env: reguły zamiast zapytania pod zły adres
+    monkeypatch.setenv("RUNPOD_ENDPOINT_ID", "abc123")
+    client = LLMClient(runpod)
+    assert client.available and client.model["endpoint"] == "https://api.runpod.ai/v2/abc123/openai/v1/chat/completions"
+
+
 def test_consortium_name_broken_after_point_number_keeps_first_word():
     from app.config import load_classes
     from app.engine import process_pages
