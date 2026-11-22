@@ -1,4 +1,3 @@
-import os
 
 from app.candidates import find_candidates
 from app.normalize import as_bzp, as_date, as_iban, as_ted, nip_checksum_ok
@@ -40,12 +39,13 @@ def test_leaf_f1_nulls_numbers_and_extra_keys():
 
 
 def test_llm_without_key_returns_none(monkeypatch):
-    monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
-    os.environ.pop("MISTRAL_API_KEY", None)
     from app.llm import LLMClient
 
-    mistral = {"name": "m", "endpoint": "https://api.mistral.ai/v1/chat/completions", "api_key_env": "MISTRAL_API_KEY"}
-    client = LLMClient(mistral)
+    monkeypatch.setattr("app.llm.load_env", lambda: None)  # niezależnie od lokalnego .env
+    monkeypatch.delenv("RUNPOD_API_KEY", raising=False)
+    runpod = {"name": "b", "endpoint": "https://api.runpod.ai/v2/abc123/openai/v1/chat/completions",
+              "api_key_env": "RUNPOD_API_KEY"}
+    client = LLMClient(runpod)
     assert client.available is False
     assert client.complete_json("sys", "user") is None
     # Serwer bez klucza (Ollama): dostępny bez zmiennej środowiskowej.
@@ -61,6 +61,8 @@ def test_llm_endpoint_id_from_env(monkeypatch):
     monkeypatch.setenv("RUNPOD_API_KEY", "rpa_test")
     monkeypatch.delenv("RUNPOD_ENDPOINT_ID", raising=False)
     assert not LLMClient(runpod).available  # brak ID w .env: reguły zamiast zapytania pod zły adres
+    monkeypatch.setenv("RUNPOD_ENDPOINT_ID", "")  # puste pole w .env z repozytorium
+    assert not LLMClient(runpod).available
     monkeypatch.setenv("RUNPOD_ENDPOINT_ID", "abc123")
     client = LLMClient(runpod)
     assert client.available and client.model["endpoint"] == "https://api.runpod.ai/v2/abc123/openai/v1/chat/completions"

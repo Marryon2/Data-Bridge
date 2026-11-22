@@ -271,6 +271,8 @@ def serve() -> None:
     port = int(os.environ.get("PORT", "8000"))
     # Przyciski AI zawsze w trybie llm, niezależnie od `extraction` w config/model.yaml.
     ai = LLMClient({**load_model(), "extraction": "llm"})
+    if not ai.available:
+        print("LLM niedostępny (brak klucza lub endpointu w .env / config/model.yaml): działają same reguły.", flush=True)
     busy = threading.Lock()  # jedno przetwarzanie naraz: drugi Start nie może brać tych samych plików
     uploading = threading.Lock()
 

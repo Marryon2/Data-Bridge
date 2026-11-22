@@ -22,13 +22,18 @@ Układ katalogów: kod w `/opt/solution`, dane w `/opt/input` i `/opt/output`.
 | OCR skanów: Tesseract z językiem polskim | lokalnie, w obrazie | – |
 | LLM: Bielik 7B (`speakleash/bielik-minitron-7b-v3.0-instruct`, otwarty model) na **RunPod Serverless** (vLLM, API zgodne z OpenAI) | `https://api.runpod.ai/v2/<RUNPOD_ENDPOINT_ID>/openai/v1/chat/completions` (`config/model.yaml`) | `RUNPOD_API_KEY` w `/opt/solution/.env` |
 
-Klucz API i ID endpointu są w `/opt/solution/.env` (wzór: `.env.example`), nie w kodzie ani w repozytorium:
+Plik `/opt/solution/.env` jest w repozytorium, ale z pustymi polami: klucza API i ID endpointu nie ma w kodzie ani w repozytorium. Przed pierwszym uruchomieniem wpisz je:
 
-```
-RUNPOD_API_KEY=rpa_...
-RUNPOD_ENDPOINT_ID=...
-```
+1. Otwórz plik: `sudo nano /opt/solution/.env`
+2. Wpisz otrzymane wartości po znaku `=`:
+   ```
+   RUNPOD_API_KEY=rpa_...
+   RUNPOD_ENDPOINT_ID=...
+   ```
+3. Zapisz plik (w nano: Ctrl+O, Enter, Ctrl+X). Obrazu Dockera nie trzeba przebudowywać: `docker-compose.yml` wczytuje `.env` przy każdym uruchomieniu (`env_file`).
 
-Docker przekazuje je do kontenera przez `env_file` w `docker-compose.yml`. Pierwsze zapytanie po dłuższej przerwie może czekać na start maszyny RunPod (tzw. cold start); limit czasu to 300 s na zapytanie.
+Jeśli na starcie pojawi się komunikat „LLM niedostępny”, program nie znalazł klucza lub ID endpointu i przetwarza pliki samymi regułami.
+
+Pierwsze zapytanie po dłuższej przerwie może czekać na start maszyny RunPod (tzw. cold start); limit czasu to 300 s na zapytanie.
 
 Gdy serwer LLM nie odpowiada, przetwarzanie i tak się kończy: dane wyciągają wtedy reguły z `config/classes/*.yaml`.

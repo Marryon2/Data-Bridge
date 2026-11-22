@@ -2,8 +2,6 @@
 # RUNPOD_ENDPOINT_ID są w .env (nie w repozytorium). Nazwa modelu musi być dokładnie taka jak w /openai/v1/models.
 # Własna Ollama zamiast RunPod: name SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M,
 # endpoint http://<host>:11434/api/chat, api_key_env "" (natywne /api/chat, bo tylko ono pozwala ustawić num_ctx).
-# Mistral La Plateforme: endpoint https://api.mistral.ai/v1/chat/completions, name ministral-3b-latest,
-# api_key_env MISTRAL_API_KEY.
 name: speakleash/bielik-minitron-7b-v3.0-instruct
 endpoint: https://api.runpod.ai/v2/${RUNPOD_ENDPOINT_ID}/openai/v1/chat/completions
 api_key_env: RUNPOD_API_KEY
@@ -17,5 +15,5 @@ json_mode: true
 # llm: klasa i JSON z modelu (reguły tylko, gdy serwer nie odpowie). rules: same reguły.
 extraction: llm
 # Pliki przetwarzane naraz w CLI. Ollama z OLLAMA_NUM_PARALLEL=1 i tak obsługuje AI po kolei – 2 nakładają tylko OCR
-# na czekanie; API z równoległością (np. Mistral) skorzysta z większej liczby.
+# na czekanie; API z równoległością (np. RunPod) skorzysta z większej liczby.
 workers: 2

@@ -152,7 +152,7 @@ Odrzucona wartość staje się `null`. Lepiej zostawić puste pole niż wpisać 
 | `extraction` | `llm` | `llm` = model + reguły jako zapas; `rules` = tylko reguły |
 | `workers` | `2` | ile plików przetwarzać naraz w trybie wsadowym |
 
-Klucze API trzymamy w pliku `.env` obok `config/` (wzór: `.env.example`). Plik `.env` nie trafia do repozytorium.
+Klucze API trzymamy w pliku `.env` obok `config/`. W repozytorium `.env` jest z pustymi polami; wpisane wartości zostają tylko lokalnie i na serwerze.
 
 ### 5.6. Protokół wywołania
 
@@ -199,7 +199,7 @@ Program korzysta z Bielika na RunPod Serverless. Kod obsługuje API zgodne z Ope
    RUNPOD_API_KEY=rpa_...
    RUNPOD_ENDPOINT_ID=<id endpointu>
    ```
-   Zmienną dopisz też w `.env.example` bez wartości, żeby inni wiedzieli, że jest potrzebna.
+   W repozytorium `.env` zostaje z pustymi polami; nie commituj go z wpisanym kluczem (lokalnie: `git update-index --skip-worktree solution/.env`).
 3. Sprawdź jedno zapytanie ręcznie, zanim uruchomisz wsad:
    ```bash
    curl -s https://api.runpod.ai/v2/$RUNPOD_ENDPOINT_ID/openai/v1/chat/completions \

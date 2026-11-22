@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import urllib.error
 import urllib.request
 
@@ -15,9 +16,11 @@ class LLMClient:
         load_env()
         self.model = dict(model or load_model())
         # ${ZMIENNA} w adresie (np. ID endpointu RunPod) bierzemy z .env, żeby nie trzymać go w repozytorium.
-        self.model["endpoint"] = os.path.expandvars(self.model.get("endpoint") or "")
+        # Pusta zmienna zostaje jako ${ZMIENNA}, więc `available` odrzuci adres zamiast pytać pod /v2//.
+        self.model["endpoint"] = re.sub(r"\$\{(\w+)\}", lambda m: os.environ.get(m[1], "").strip() or m[0],
+                                        self.model.get("endpoint") or "")
         # Pusty api_key_env = serwer bez klucza (np. własna Ollama).
-        self.key_env = self.model.get("api_key_env", "MISTRAL_API_KEY")
+        self.key_env = self.model.get("api_key_env", "")
         self.api_key = os.environ.get(self.key_env, "").strip() if self.key_env else ""
 
     @property

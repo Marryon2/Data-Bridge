@@ -18,10 +18,11 @@ Bez Tesseracta i LLM aplikacja nadal działa w trybie reguł (regex + słowniki)
 
 1. **Zainstaluj Pythona.** Wejdź na [python.org](https://www.python.org/downloads/), pobierz najnowszą wersję i zainstaluj. Podczas instalacji zaznacz pole **„Add python.exe to PATH”**. To ważne.
 2. **Pobierz program.** Na stronie projektu na GitHubie (https://github.com/Marryon2/Data-Bridge) kliknij zielony przycisk **„Code”**, potem **„Download ZIP”**. Rozpakuj go w dowolnym miejscu. W środku są foldery `input`, `output`, `solution` i plik `RUN.md`.
-3. **Uruchom.** Wejdź do folderu **`solution`** i kliknij dwa razy plik **`start.bat`**.
+3. **Wpisz klucz do AI** (raz, przed pierwszym uruchomieniem), patrz [Klucz do AI](#klucz-do-ai) niżej.
+4. **Uruchom.** Wejdź do folderu **`solution`** i kliknij dwa razy plik **`start.bat`**.
    - Za pierwszym razem program sam pobierze to, czego potrzebuje. Może to potrwać kilka minut.
    - Jeśli Windows zapyta o zgodę na instalację, kliknij **„Tak”**.
-4. Po chwili sama otworzy się przeglądarka ze stroną programu.
+5. Po chwili sama otworzy się przeglądarka ze stroną programu.
 
 ### Na Linuksie
 
@@ -30,14 +31,29 @@ Bez Tesseracta i LLM aplikacja nadal działa w trybie reguł (regex + słowniki)
    sudo apt install python3 python3-venv tesseract-ocr tesseract-ocr-pol
    ```
 2. Pobierz program tak jak na Windowsie (**„Code”** → **„Download ZIP”**) i rozpakuj go.
-3. W terminalu wejdź do folderu `solution` w rozpakowanym programie i wpisz po kolei:
+3. **Wpisz klucz do AI** (raz), patrz [Klucz do AI](#klucz-do-ai) niżej.
+4. W terminalu wejdź do folderu `solution` w rozpakowanym programie i wpisz po kolei:
    ```
    python3 -m venv .venv
    .venv/bin/pip install -r requirements.txt
    .venv/bin/python -m app --serve --open
    ```
    Przy kolejnych uruchomieniach wystarczy samo ostatnie polecenie.
-4. Przeglądarka otworzy stronę programu. Jeśli się nie otworzy, wpisz w niej adres **localhost:8000**.
+5. Przeglądarka otworzy stronę programu. Jeśli się nie otworzy, wpisz w niej adres **localhost:8000**.
+
+### Klucz do AI
+
+Program korzysta z modelu AI (Bielik) przez internet. Klucz do niego nie jest na GitHubie, żeby nikt obcy go nie użył. Dostajesz go osobno od autorów projektu.
+
+1. W folderze `solution` otwórz plik **`.env`** w Notatniku (na Linuksie w dowolnym edytorze tekstu). Plik jest już w programie, tylko z pustymi polami.
+2. Wpisz otrzymane wartości po znaku `=`:
+   ```
+   RUNPOD_API_KEY=rpa_...
+   RUNPOD_ENDPOINT_ID=...
+   ```
+3. Zapisz plik.
+
+Bez klucza program też działa, ale korzysta wtedy z lokalnych skryptów i wyniki są mniej dokładne. Poznasz to po komunikacie „LLM niedostępny” w czarnym oknie.
 
 ### Jak korzystać
 
@@ -54,7 +70,6 @@ Bez Tesseracta i LLM aplikacja nadal działa w trybie reguł (regex + słowniki)
 ```bat
 git clone https://github.com/Marryon2/Data-Bridge.git opt
 cd opt\solution
-copy .env.example .env
 start.bat
 ```
 
@@ -74,7 +89,6 @@ Na nowym komputerze potrzebne są tylko Python 3.13+ (z zaznaczonym „Add pytho
 ```bash
 git clone https://github.com/Marryon2/Data-Bridge.git opt
 cd opt/solution
-cp .env.example .env
 sudo apt install tesseract-ocr tesseract-ocr-pol   # macOS: brew install tesseract tesseract-lang
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
@@ -101,13 +115,12 @@ Otwórz <http://localhost:8000> (port zmienisz w `.env` zmienną `PORT`). **Wgra
 
 ## Konfiguracja
 
-Plik `.env` (wzór w `.env.example`):
+Plik `.env` (jest w repozytorium z pustymi polami; wpisane klucze nie mogą trafić z powrotem do repozytorium):
 
 | Zmienna | Znaczenie |
 |---|---|
 | `RUNPOD_API_KEY` | klucz RunPod (`rpa_...`) do modelu Bielik |
 | `RUNPOD_ENDPOINT_ID` | ID endpointu RunPod Serverless z Bielikiem |
-| `MISTRAL_API_KEY` | klucz, tylko jeśli używasz Mistral La Plateforme |
 | `DATA_DIR` | katalog z danymi treningowymi (`dane/przyklad_XX/*.json`) dla scorera i części testów |
 | `PORT` | port formularza WWW, domyślnie `8000` |
 
@@ -122,8 +135,6 @@ ollama pull SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M
 ```
 
 Potem w `config/model.yaml` ustaw `name: SpeakLeash/bielik-minitron-7B-v3.0-instruct:Q4_K_M`, `endpoint: http://localhost:11434/api/chat` i `api_key_env: ""`.
-
-Mistral La Plateforme: `endpoint: https://api.mistral.ai/v1/chat/completions`, `name: ministral-3b-latest`, `api_key_env: MISTRAL_API_KEY`.
 
 `extraction: llm` oznacza, że klasę i JSON zwraca model, a reguły wchodzą tylko wtedy, gdy serwer nie odpowie. `extraction: rules` oznacza same reguły.
 
@@ -156,7 +167,7 @@ git remote add origin https://github.com/Marryon2/Data-Bridge.git
 git fetch -q origin main
 git checkout -f -B main origin/main
 cd /opt/solution
-sudo cp .env.example .env          # opcjonalnie: klucze API
+sudo nano .env                     # wpisz RUNPOD_API_KEY i RUNPOD_ENDPOINT_ID
 sudo docker compose build          # obraz z Pythonem 3.13 i Tesseractem; w czasie oceny nic się nie pobiera
 ```
 
