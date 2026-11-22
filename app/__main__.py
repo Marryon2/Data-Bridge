@@ -20,7 +20,7 @@ def main() -> int:
         print("LLM niedostępny (brak klucza lub endpointu w config/model.yaml): działają same reguły.")
         llm = None
     if not process_input(llm):
-        print(f"Brak plików PDF w {ROOT.parent / 'input'}")
+        print(f"Brak plików PDF w {ROOT / 'input'}")
     return 0
 
 

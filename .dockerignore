@@ -1,0 +1,10 @@
+graphify-out/
+desktop.ini
+.env
+.venv/
+trace/
+.pytest_cache/
+.tessdata/
+# dokumenty i wyniki są montowane z hosta, nie kopiowane do obrazu
+input/
+output/

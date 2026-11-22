@@ -1,7 +1,0 @@
-graphify-out/
-desktop.ini
-.env
-.venv/
-trace/
-.pytest_cache/
-.tessdata/

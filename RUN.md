@@ -6,10 +6,10 @@ Komenda:
 cd /opt/solution && sudo docker compose run --rm -T odwolania2json
 ```
 
-Układ katalogów: kod w `/opt/solution`, dane w `/opt/input` i `/opt/output`.
+Układ katalogów: projekt w `/opt/solution`, a w nim foldery `input/` i `output/` (`/opt/solution/input`, `/opt/solution/output`).
 
-- Przetwarza wszystkie pliki PDF z `/opt/input/`, także w podkatalogach (`/opt/input/case1/odwolanie_nr_1.pdf`).
-- Wynik zapisuje do `/opt/output/` pod tą samą ścieżką i nazwą: `/opt/output/case1/odwolanie_nr_1.json`.
+- Przetwarza wszystkie pliki PDF z `/opt/solution/input/`, także w podkatalogach (`/opt/solution/input/case1/odwolanie_nr_1.pdf`).
+- Wynik zapisuje do `/opt/solution/output/` pod tą samą ścieżką i nazwą: `/opt/solution/output/case1/odwolanie_nr_1.json`.
 - Dokument, który nie jest odwołaniem, pełnomocnictwem ani potwierdzeniem przelewu, dostaje pusty JSON `{}`.
 - Nie zadaje pytań i kończy się sama po ostatnim pliku. Postęp wypisuje po jednej linii na plik.
 - Ślad ekstrakcji każdego pola (cytat, strona, metoda) trafia do `/opt/solution/trace/`.

@@ -25,20 +25,20 @@ Każdy inny dokument (wyrok KIO, ogłoszenie, faktura, szkolenie…) dostaje pus
 ## 2. Układ katalogów
 
 ```
-/opt/
+/opt/solution/    katalog projektu (= repozytorium)
 ├── RUN.md        komenda dla oceniających
-├── input/        PDF-y wejściowe, np. input/case1/odwolanie.pdf
-├── output/       wyniki, np. output/case1/odwolanie.json
-└── solution/     kod aplikacji
-    ├── app/      kod (Python)
-    ├── config/   model.yaml, klasy dokumentów, słownik czynności
-    ├── docs/     dokumentacja
-    ├── tests/    testy pytest
-    ├── trace/    ślad ekstrakcji każdego pola (cytat, strona, metoda)
-    ├── start.bat, Dockerfile, docker-compose.yml
+├── input/        PDF-y wejściowe, np. input/case1/odwolanie.pdf (na serwerze testowym, nie w repozytorium)
+├── output/       wyniki, np. output/case1/odwolanie.json (nie w repozytorium)
+├── .env          klucz API i ID endpointu (w repozytorium z pustymi polami)
+├── app/          kod (Python)
+├── config/       model.yaml, klasy dokumentów, słownik czynności
+├── docs/         dokumentacja
+├── tests/        testy pytest
+├── trace/        ślad ekstrakcji każdego pola (cytat, strona, metoda)
+└── start.bat, Dockerfile, docker-compose.yml
 ```
 
-Kod szuka `input/` i `output/` w katalogu nadrzędnym projektu (`ROOT.parent`). W kontenerze projekt leży w `/app`, a compose montuje `../input` jako `/input` i `../output` jako `/output`.
+Kod szuka `input/` i `output/` w katalogu projektu (`ROOT`). W kontenerze projekt leży w `/app`, a compose montuje `./input` jako `/app/input` i `./output` jako `/app/output`.
 
 ## 3. Sposoby uruchomienia
 
@@ -199,7 +199,7 @@ Program korzysta z Bielika na RunPod Serverless. Kod obsługuje API zgodne z Ope
    RUNPOD_API_KEY=rpa_...
    RUNPOD_ENDPOINT_ID=<id endpointu>
    ```
-   W repozytorium `.env` zostaje z pustymi polami; nie commituj go z wpisanym kluczem (lokalnie: `git update-index --skip-worktree solution/.env`).
+   W repozytorium `.env` zostaje z pustymi polami; nie commituj go z wpisanym kluczem (lokalnie: `git update-index --skip-worktree .env`).
 3. Sprawdź jedno zapytanie ręcznie, zanim uruchomisz wsad:
    ```bash
    curl -s https://api.runpod.ai/v2/$RUNPOD_ENDPOINT_ID/openai/v1/chat/completions \

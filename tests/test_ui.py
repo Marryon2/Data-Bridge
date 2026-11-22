@@ -9,7 +9,7 @@ import app.ui as ui
 def test_upload_start_keeps_input_and_processes_only_new_files(tmp_path, monkeypatch):
     monkeypatch.setattr(ui, "INPUT", tmp_path / "input")
     monkeypatch.setattr(ui, "OUTPUT", tmp_path / "output")
-    monkeypatch.setattr(engine, "ROOT", tmp_path / "solution")  # prawdziwe process_input na tmp_path/input|output
+    monkeypatch.setattr(engine, "ROOT", tmp_path)  # prawdziwe process_input na tmp_path/input|output
     monkeypatch.setattr(engine, "process_pdf", lambda pdf, llm=None: ({"plik": pdf.name}, {"class": None}))
     monkeypatch.setenv("PORT", "8766")
     threading.Thread(target=ui.serve, daemon=True).start()

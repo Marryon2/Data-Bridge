@@ -1,5 +1,14 @@
-# Dokumenty i wyniki zostają lokalnie; w repozytorium są tylko puste foldery.
-input/*
-output/*
-!input/.gitkeep
-!output/.gitkeep
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+trace/**
+!trace/.gitkeep
+hacknation-2026/
+dane/
+graphify-out/
+desktop.ini
+.tessdata/
+# Dokumenty i wyniki: foldery input/ i output/ są na serwerze testowym, nie w repozytorium.
+input/
+output/

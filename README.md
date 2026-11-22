@@ -17,9 +17,9 @@ Bez Tesseracta i LLM aplikacja nadal działa w trybie reguł (regex + słowniki)
 ### Na Windowsie
 
 1. **Zainstaluj Pythona.** Wejdź na [python.org](https://www.python.org/downloads/), pobierz najnowszą wersję i zainstaluj. Podczas instalacji zaznacz pole **„Add python.exe to PATH”**. To ważne.
-2. **Pobierz program.** Na stronie projektu na GitHubie (https://github.com/Marryon2/Data-Bridge) kliknij zielony przycisk **„Code”**, potem **„Download ZIP”**. Rozpakuj go w dowolnym miejscu. W środku są foldery `input`, `output`, `solution` i plik `RUN.md`.
+2. **Pobierz program.** Na stronie projektu na GitHubie (https://github.com/Marryon2/Data-Bridge) kliknij zielony przycisk **„Code”**, potem **„Download ZIP”**. Rozpakuj go w dowolnym miejscu. Powstanie folder z programem (np. `Data-Bridge-main`).
 3. **Wpisz klucz do AI** (raz, przed pierwszym uruchomieniem), patrz [Klucz do AI](#klucz-do-ai) niżej.
-4. **Uruchom.** Wejdź do folderu **`solution`** i kliknij dwa razy plik **`start.bat`**.
+4. **Uruchom.** W folderze z programem kliknij dwa razy plik **`start.bat`**.
    - Za pierwszym razem program sam pobierze to, czego potrzebuje. Może to potrwać kilka minut.
    - Jeśli Windows zapyta o zgodę na instalację, kliknij **„Tak”**.
 5. Po chwili sama otworzy się przeglądarka ze stroną programu.
@@ -32,7 +32,7 @@ Bez Tesseracta i LLM aplikacja nadal działa w trybie reguł (regex + słowniki)
    ```
 2. Pobierz program tak jak na Windowsie (**„Code”** → **„Download ZIP”**) i rozpakuj go.
 3. **Wpisz klucz do AI** (raz), patrz [Klucz do AI](#klucz-do-ai) niżej.
-4. W terminalu wejdź do folderu `solution` w rozpakowanym programie i wpisz po kolei:
+4. W terminalu wejdź do folderu z programem i wpisz po kolei:
    ```
    python3 -m venv .venv
    .venv/bin/pip install -r requirements.txt
@@ -45,7 +45,7 @@ Bez Tesseracta i LLM aplikacja nadal działa w trybie reguł (regex + słowniki)
 
 Program korzysta z modelu AI (Bielik) przez internet. Klucz do niego nie jest na GitHubie, żeby nikt obcy go nie użył. Dostajesz go osobno od autorów projektu.
 
-1. W folderze `solution` otwórz plik **`.env`** w Notatniku (na Linuksie w dowolnym edytorze tekstu). Plik jest już w programie, tylko z pustymi polami.
+1. W folderze z programem otwórz plik **`.env`** w Notatniku (na Linuksie w dowolnym edytorze tekstu). Plik jest już w programie, tylko z pustymi polami.
 2. Wpisz otrzymane wartości po znaku `=`:
    ```
    RUNPOD_API_KEY=rpa_...
@@ -68,8 +68,8 @@ Bez klucza program też działa, ale korzysta wtedy z lokalnych skryptów i wyni
 ## Szybki start (Windows)
 
 ```bat
-git clone https://github.com/Marryon2/Data-Bridge.git opt
-cd opt\solution
+git clone https://github.com/Marryon2/Data-Bridge.git
+cd Data-Bridge
 start.bat
 ```
 
@@ -80,15 +80,15 @@ start.bat
 3. Jeśli Tesseract nie ma języka polskiego, pobiera `pol.traineddata` do `.tessdata/` w projekcie.
 4. Tworzy `.venv`, instaluje `requirements.txt`, uruchamia stronę WWW i otwiera ją w przeglądarce (<http://localhost:8000>). Zamknięcie okna konsoli zatrzymuje stronę.
 
-`start.bat --cli` zamiast strony przetwarza od razu wszystkie PDF-y z `input/` (folder obok projektu) do `output/`.
+`start.bat --cli` zamiast strony przetwarza od razu wszystkie PDF-y z `input/` do `output/` (oba foldery w katalogu projektu).
 
 Na nowym komputerze potrzebne są tylko Python 3.13+ (z zaznaczonym „Add python.exe to PATH”) i `winget`, który jest w Windows 10 i 11. Gdy instalacja Tesseracta się nie uda, `start.bat` wypisuje ostrzeżenie i uruchamia aplikację bez OCR.
 
 ## Szybki start (Linux / macOS)
 
 ```bash
-git clone https://github.com/Marryon2/Data-Bridge.git opt
-cd opt/solution
+git clone https://github.com/Marryon2/Data-Bridge.git
+cd Data-Bridge
 sudo apt install tesseract-ocr tesseract-ocr-pol   # macOS: brew install tesseract tesseract-lang
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
@@ -99,10 +99,10 @@ python3 -m venv .venv
 
 ### Przetwarzanie wsadowe (CLI)
 
-1. Włóż PDF-y do `input/` obok katalogu projektu (`/opt/input/` przy projekcie w `/opt/solution`), np. `input/case1/odwolanie_nr_1.pdf`. Przetwarzany jest każdy PDF z `input/`, na dowolnej głębokości.
+1. Włóż PDF-y do folderu `input/` w katalogu projektu (np. `/opt/solution/input/`; jeśli go nie ma, utwórz go), np. `input/case1/odwolanie_nr_1.pdf`. Przetwarzany jest każdy PDF z `input/`, na dowolnej głębokości.
 2. Uruchom `python -m app` (albo `start.bat --cli`).
 3. Wyniki trafiają pod tę samą ścieżkę co plik wejściowy:
-   - `output/case1/odwolanie_nr_1.json` (też obok projektu): JSON dokumentu,
+   - `output/case1/odwolanie_nr_1.json` (też w katalogu projektu): JSON dokumentu,
    - `trace/case1/odwolanie_nr_1.json`: ślad (cytat, strona, metoda, pewność każdego pola).
 
 ### Formularz w przeglądarce
@@ -140,7 +140,7 @@ Potem w `config/model.yaml` ustaw `name: SpeakLeash/bielik-minitron-7B-v3.0-inst
 
 ## Docker
 
-Obraz z Pythonem 3.13 i `tesseract-ocr-pol`. Montowane z hosta: `../input` i `../output` (obok projektu) oraz `trace/`.
+Obraz z Pythonem 3.13 i `tesseract-ocr-pol`. Montowane z hosta foldery projektu: `input/`, `output/` i `trace/`.
 
 ```bash
 docker compose build                                                    # raz, przy wdrożeniu
@@ -148,25 +148,26 @@ docker compose run --rm -T odwolania2json                               # CLI: i
 docker compose run --service-ports odwolania2json python -m app --serve  # formularz WWW
 ```
 
-## Wdrożenie na serwer oceny (`/opt`)
+## Wdrożenie na serwer oceny (`/opt/solution`)
 
-Oceniający uruchamiają komendę z `/opt/RUN.md`. Układ na serwerze:
+Oceniający uruchamiają komendę z `RUN.md`. Repozytorium to cała zawartość katalogu projektu; foldery `input/` i `output/` są już na serwerze testowym i nie ma ich w repozytorium. Układ na serwerze:
 
 ```
-/opt/
+/opt/solution/
 ├── RUN.md       ← komenda dla oceniających
-├── input/       ← dokumenty od oceniających
+├── input/       ← dokumenty od oceniających (już na serwerze)
 ├── output/      ← wyniki
-└── solution/    ← kod aplikacji
+├── .env         ← klucz API (wpisany na serwerze)
+├── app/, config/, docs/, tests/, …
+└── Dockerfile, docker-compose.yml, start.bat
 ```
 
 ```bash
-cd /opt                        # repozytorium to cały /opt; katalog już istnieje, dlatego git init zamiast git clone
-git init -q
-git remote add origin https://github.com/Marryon2/Data-Bridge.git
-git fetch -q origin main
-git checkout -f -B main origin/main
-cd /opt/solution
+cd /opt/solution               # katalog z input/ i output/ już istnieje, dlatego git init zamiast git clone
+sudo git init -q
+sudo git remote add origin https://github.com/Marryon2/Data-Bridge.git
+sudo git fetch -q origin main
+sudo git checkout -f -B main origin/main   # input/ i output/ zostają nietknięte (są w .gitignore)
 sudo nano .env                     # wpisz RUNPOD_API_KEY i RUNPOD_ENDPOINT_ID
 sudo docker compose build          # obraz z Pythonem 3.13 i Tesseractem; w czasie oceny nic się nie pobiera
 ```
@@ -174,9 +175,9 @@ sudo docker compose build          # obraz z Pythonem 3.13 i Tesseractem; w czas
 Test dokładnie tak, jak zrobią to oceniający (także po `sudo reboot`):
 
 ```bash
-sudo rm -rf /opt/output/* && sudo mkdir -p /opt/input/case1 && sudo cp <przykładowe PDF-y> /opt/input/case1/
+sudo rm -rf /opt/solution/output/* && sudo mkdir -p /opt/solution/input/case1 && sudo cp <przykładowe PDF-y> /opt/solution/input/case1/
 cd /opt/solution && sudo docker compose run --rm -T odwolania2json
-ls -R /opt/output/
+ls -R /opt/solution/output/
 ```
 
 Komenda nie korzysta z usługi działającej w tle: kontener startuje z komendą i kończy się po ostatnim pliku.

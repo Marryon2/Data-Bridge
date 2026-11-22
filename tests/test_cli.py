@@ -8,7 +8,7 @@ def test_cli_processes_every_pdf_in_input_and_mirrors_paths(tmp_path, monkeypatc
     for name in ["case1/odwolanie.pdf", "case1/sub/przelew.PDF", "luzem.pdf", "case1/notatka.txt"]:
         (tmp_path / "input" / name).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / "input" / name).write_bytes(b"%PDF")
-    monkeypatch.setattr(engine, "ROOT", tmp_path / "solution")  # input/ i output/ obok katalogu projektu
+    monkeypatch.setattr(engine, "ROOT", tmp_path)  # input/ i output/ w katalogu projektu
     monkeypatch.setattr(engine, "process_pdf", lambda pdf, llm=None: ({"plik": pdf.name}, {"class": None}))
     monkeypatch.setattr(cli, "LLMClient", lambda: type("Off", (), {"available": False})())
     monkeypatch.setattr("sys.argv", ["app"])

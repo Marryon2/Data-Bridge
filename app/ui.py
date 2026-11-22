@@ -17,7 +17,7 @@ from app.config import ROOT, load_env, load_model
 from app.engine import process_input
 from app.llm import LLMClient
 
-INPUT, OUTPUT = ROOT.parent / "input", ROOT.parent / "output"
+INPUT, OUTPUT = ROOT / "input", ROOT / "output"
 
 _PAGE = """<!DOCTYPE html>
 <html lang="pl">

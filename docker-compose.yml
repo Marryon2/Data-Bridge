@@ -9,7 +9,7 @@ services:
     ports:
       - "8000:8000" # tylko dla formularza: docker compose run --service-ports odwolania2json python -m app --serve
     volumes:
-      # /opt/input i /opt/output leżą obok /opt/solution; aplikacja czyta je jako ROOT.parent/input|output.
-      - ../input:/input
-      - ../output:/output
+      # input/ i output/ leżą w katalogu projektu (na serwerze testowym już istnieją); aplikacja czyta je jako ROOT/input|output.
+      - ./input:/app/input
+      - ./output:/app/output
       - ./trace:/app/trace

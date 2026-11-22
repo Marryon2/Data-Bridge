@@ -596,11 +596,11 @@ def process_pdf(path: str | Path, llm=None) -> tuple[dict, dict]:
 def process_input(llm=None, pending_only: bool = False) -> list[tuple[Path, Path, dict]]:
     """Każdy PDF z input/ (dowolna głębokość) -> JSON w output/ pod tą samą ścieżką, ślad w trace/.
 
-    input/ i output/ leżą obok projektu (/opt/input, /opt/solution); w kontenerze ROOT=/app, więc /input i /output.
+    input/ i output/ leżą w katalogu projektu (ROOT); w kontenerze ROOT=/app, więc /app/input i /app/output.
     pending_only (GUI): pomija PDF-y, które mają już JSON w output/. CLI oceny przetwarza zawsze wszystko.
     Zwraca (pdf, zapisany json, dokument) dopiero, gdy zapisane są wszystkie pliki.
     """
-    input_root, output_root, trace_root = ROOT.parent / "input", ROOT.parent / "output", ROOT / "trace"
+    input_root, output_root, trace_root = ROOT / "input", ROOT / "output", ROOT / "trace"
     pdfs = sorted(p for p in input_root.rglob("*") if p.is_file() and p.suffix.lower() == ".pdf")
     if pending_only:
         pdfs = [p for p in pdfs if not (output_root / p.relative_to(input_root).with_suffix(".json")).exists()]
@@ -616,6 +616,6 @@ def process_input(llm=None, pending_only: bool = False) -> list[tuple[Path, Path
             destination.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             traced.write_text(json.dumps(trace, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             label = f"{trace.get('class') or 'none'}, {'AI' if trace.get('method') == 'llm' else 'reguły'}"
-            print(f"{pdf.relative_to(input_root)} -> {destination.relative_to(ROOT.parent)} ({label})", flush=True)
+            print(f"{pdf.relative_to(input_root)} -> {destination.relative_to(ROOT)} ({label})", flush=True)
             results.append((pdf, destination, document))
     return results
